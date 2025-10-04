@@ -12,7 +12,7 @@ function App() {
         latitude: 37.8,
         zoom: 14
       }}
-      style={{width: 600, height: 400}}
+       style={{ width: "100vw", height: "100vh" }}
       mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
     />
   );
