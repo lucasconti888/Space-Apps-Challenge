@@ -2,7 +2,7 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import Typography from "@mui/material/Typography";
-import { Drawer, DrawerContent, DrawerTrigger } from "../ui/drawer";
+import { Drawer, DrawerContent } from "../ui/drawer";
 
 interface SidebarProps {
   item: {
@@ -15,8 +15,6 @@ interface SidebarProps {
 export default function Sidebar({ item, open, setOpen }: SidebarProps) {
   return (
     <Drawer open={open} onClose={() => setOpen(false)}>
-      <DrawerTrigger onClick={() => setOpen(true)}>Abrir</DrawerTrigger>
-
       <DrawerContent>
         {item ? (
           <List>
