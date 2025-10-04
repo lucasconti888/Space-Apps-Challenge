@@ -94,9 +94,9 @@ function App() {
       <Sidebar item={item} open={open} setOpen={setOpen} />
 
       {/* Header alinhado à esquerda, aparência sóbria */}
-      <div className="fixed top-4 left-4 z-30 flex flex-col items-start gap-2">
+      <div className="fixed top-4 z-30 flex flex-col items-start gap-2 max-h-[calc(100vh)] overflow-y-auto w-full">
         {!expanded && (
-          <div className="text-2xl font-semibold text-gray-800">
+          <div className="text-2xl font-semibold text-gray-800 w-full">
             <div className="flex items-center gap-2 px-4 py-2 rounded-full ">
               <RoomIcon />
               <span className="text-sm font-medium text-gray-800">
@@ -105,14 +105,14 @@ function App() {
                 Pirituba
               </span>
             </div>
-            <div className="mt-8 flex flex-col items-start">
+            <div className="mt-8 flex flex-col items-start ml-6">
               <span className="text-6xl font-bold text-gray-900">
                 {temperatura}
               </span>
               <span className="text-2xl text-gray-600 mt-2">{condicao}</span>
             </div>
             {/* Temperaturas máxima/mínima e sensação térmica */}
-            <div className="flex flex-col items-start mt-6 mb-2">
+            <div className="flex flex-col items-start mt-6 mb-2 ml-8">
               <span className="text-lg text-gray-700 font-medium">
                 {tempMax} / <span className="text-gray-500">{tempMin}</span>
               </span>
@@ -156,7 +156,7 @@ function App() {
                   ))}
                 </div>
               </div>
-              <div className="flex flex-col items-start mt-6 mb-2">
+              <div className="flex flex-col items-start mt-6 mb-2 ml-7">
                 <span className="text-lg text-gray-700 font-medium">
                   {tempMax} / <span className="text-gray-500">{tempMin}</span>
                 </span>
