@@ -1,5 +1,9 @@
+import CloudIcon from "@mui/icons-material/Cloud";
+import NightsStayIcon from "@mui/icons-material/NightsStay";
+import RoomIcon from "@mui/icons-material/Room";
+import WbSunnyIcon from "@mui/icons-material/WbSunny";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import Map, { Marker, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import "./App.css";
 import Sidebar from "./components/drawer";
@@ -17,6 +21,7 @@ function App() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const item = useMemo(() => {
     if (!clickedItem) return null;
@@ -41,7 +46,7 @@ function App() {
       )}&limit=5&apiKey=${API_KEY_GEOAPP}`
     );
     const data = await res.json();
-    setResults(data.features); // Geoapify retorna features
+    setResults(data.features);
     setLoading(false);
   }
 
@@ -56,68 +61,285 @@ function App() {
     setShowDropdown(false);
   }
 
+  // Exemplo de temperatura e condição (você pode substituir por dados reais)
+  const temperatura = "22°C";
+  const condicao = "Encoberto";
+
+  // Exemplo de temperatura máxima, mínima e sensação
+  const tempMax = "25º";
+  const tempMin = "19º";
+  const sensacao = "Sensação térmica de 24º";
+
+  // Exemplo de dados de previsão por hora
+  const hourlyForecast = [
+    { hour: "09:00", temp: "20°C", type: "cloud" },
+    { hour: "10:00", temp: "21°C", type: "cloud" },
+    { hour: "11:00", temp: "22°C", type: "sun" },
+    { hour: "12:00", temp: "23°C", type: "sun" },
+    { hour: "13:00", temp: "24°C", type: "sun" },
+    { hour: "14:00", temp: "24°C", type: "cloud" },
+  ];
+
+  // Exemplo de dados para o grid extra
+  const gridForecast = [
+    { hour: "15:00", percent: "20%", cloud: true, moon: false, temp: "22°C" },
+    { hour: "16:00", percent: "10%", cloud: false, moon: true, temp: "21°C" },
+    { hour: "17:00", percent: "30%", cloud: true, moon: true, temp: "20°C" },
+    { hour: "18:00", percent: "40%", cloud: true, moon: false, temp: "19°C" },
+    { hour: "19:00", percent: "50%", cloud: false, moon: true, temp: "18°C" },
+  ];
+
   return (
     <>
       <Sidebar item={item} open={open} setOpen={setOpen} />
-      <div className="w-screen flex items-center justify-center px-2 py-3 bg-gray-100/95 absolute top-0 left-0 z-20">
-        <div className="relative flex-1 w-full">
-          <Input
-            type="search"
-            value={search}
-            onChange={handleInputChange}
-            placeholder="Digite para pesquisar..."
-            className="w-full"
-            onFocus={() => search.length >= 3 && setShowDropdown(true)}
-            onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-          />
-          {showDropdown && (
-            <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-auto z-30">
-              {loading && (
-                <div className="px-2 py-1 text-sm text-gray-500">
-                  Carregando...
-                </div>
-              )}
-              {results.length === 0 && !loading && search.length >= 3 && (
-                <div className="px-2 py-1 text-sm text-gray-500">
-                  Nenhum resultado
-                </div>
-              )}
-              {results.map((item) => (
-                <button
-                  key={item.properties.place_id}
-                  type="button"
-                  className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
-                  onMouseDown={() => handleSelect(item)}
-                >
-                  {item.properties.formatted}
-                </button>
-              ))}
+
+      {/* Header alinhado à esquerda, aparência sóbria */}
+      <div className="fixed top-4 left-4 z-30 flex flex-col items-start gap-2">
+        {!expanded && (
+          <div className="text-2xl font-semibold text-gray-800">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full ">
+              <RoomIcon />
+              <span className="text-sm font-medium text-gray-800">
+                {/* {viewState.latitude.toFixed(5)},{" "}
+                {viewState.longitude.toFixed(5)} */}
+                Pirituba
+              </span>
             </div>
-          )}
-        </div>
+            <div className="mt-8 flex flex-col items-start">
+              <span className="text-6xl font-bold text-gray-900">
+                {temperatura}
+              </span>
+              <span className="text-2xl text-gray-600 mt-2">{condicao}</span>
+            </div>
+            {/* Temperaturas máxima/mínima e sensação térmica */}
+            <div className="flex flex-col items-start mt-6 mb-2">
+              <span className="text-lg text-gray-700 font-medium">
+                {tempMax} / <span className="text-gray-500">{tempMin}</span>
+              </span>
+              <span className="text-base text-gray-500">{sensacao}</span>
+            </div>
+            {/* Card de previsão por hora */}
+            <div className="w-full max-w-md mx-auto px-4 mt-2">
+              <div className="bg-white/90 rounded-2xl shadow p-4 flex flex-col">
+                {/* Header do card */}
+                <div className="w-full flex items-center justify-between pb-2 text-left">
+                  <span className="block text-base text-gray-700 font-medium">
+                    Nublado. Máxima de 24 a 26ºC e mínimas de 18 a 20ºC
+                  </span>
+                  <span className="block text-lg text-gray-500 font-bold whitespace-nowrap ml-4">
+                    5º
+                  </span>
+                </div>
+                <div className="w-full text-left text-sm text-gray-500 pb-2">
+                  Temperaturas um pouco mais baixas do que ontem
+                </div>
+                <div className="border-b border-gray-200 my-2" />
+                {/* Linha de previsão por hora */}
+                <div className="flex flex-row justify-between items-end">
+                  {hourlyForecast.map((f, idx) => (
+                    <div key={idx} className="flex flex-col items-center mx-1">
+                      <span className="text-xs text-gray-500 mb-1">
+                        {f.hour}
+                      </span>
+                      {f.type === "sun" ? (
+                        <WbSunnyIcon
+                          className="text-yellow-400"
+                          fontSize="large"
+                        />
+                      ) : (
+                        <CloudIcon className="text-gray-400" fontSize="large" />
+                      )}
+                      <span className="text-sm text-gray-700 mt-1">
+                        {f.temp}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col items-start mt-6 mb-2">
+                <span className="text-lg text-gray-700 font-medium">
+                  {tempMax} / <span className="text-gray-500">{tempMin}</span>
+                </span>
+                <span className="text-base text-gray-500">{sensacao}</span>
+              </div>
+
+              {/* Novo card em grid */}
+              <div className="bg-white/90 rounded-2xl shadow p-4 mt-4">
+                <div className="grid grid-cols-5 gap-2 text-center text-xs text-gray-500 font-medium mb-2">
+                  <span>Hora</span>
+                  <span>%</span>
+                  <span>Nuvem</span>
+                  <span>Lua</span>
+                  <span>°C</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {gridForecast.map((item, idx) => (
+                    <React.Fragment key={idx}>
+                      <span className="text-xs text-gray-700 flex items-center justify-center">
+                        {item.hour}
+                      </span>
+                      <span className="text-xs text-gray-700 flex items-center justify-center">
+                        {item.percent}
+                      </span>
+                      <span className="flex items-center justify-center">
+                        {item.cloud ? (
+                          <CloudIcon
+                            className="text-gray-400"
+                            fontSize="small"
+                          />
+                        ) : (
+                          <span className="w-5 h-5" />
+                        )}
+                      </span>
+                      <span className="flex items-center justify-center">
+                        {item.moon ? (
+                          <NightsStayIcon
+                            className="text-blue-400"
+                            fontSize="small"
+                          />
+                        ) : (
+                          <span className="w-5 h-5" />
+                        )}
+                      </span>
+                      <span className="text-xs text-gray-700 flex items-center justify-center">
+                        {item.temp}
+                      </span>
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+
+              <div className="w-full max-w-md mx-auto px-4 mt-4">
+                <div className="bg-white/90 rounded-2xl shadow p-4 flex flex-col">
+                  <span className="text-base text-left text-gray-700 font-semibold mb-2">
+                    Radar
+                  </span>
+                  <div
+                    className="w-full h-40 rounded-xl overflow-hidden relative cursor-pointer"
+                    style={{ border: "2px solid #e5e7eb" }}
+                    onClick={() => setExpanded(true)}
+                  >
+                    <Map
+                      initialViewState={{
+                        longitude: viewState.longitude,
+                        latitude: viewState.latitude,
+                        zoom: 7,
+                      }}
+                      {...viewState}
+                      style={{ width: "100%", height: "100%" }}
+                      mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
+                      dragPan={false}
+                      dragRotate={false}
+                      scrollZoom={false}
+                      doubleClickZoom={false}
+                      touchZoomRotate={false}
+                    >
+                      <Marker
+                        longitude={viewState.longitude}
+                        latitude={viewState.latitude}
+                        color="#61dbfb"
+                      />
+                    </Map>
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                      <span className="text-white font-semibold text-sm">
+                        Clique para expandir
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-      <Map
-        initialViewState={{
-          longitude: -122.4,
-          latitude: 37.8,
-          zoom: 14,
-        }}
-        {...viewState}
-        onZoom={(evt) => setViewState(evt.viewState)}
-        onDrag={(evt) => setViewState(evt.viewState)}
-        onClick={(e) => {
-          setClickedItem(e);
-          setOpen(true);
-        }}
-        style={{ width: "100vw", height: "100vh" }}
-        mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
+
+      {/* Search e header só aparecem quando expandido */}
+      {expanded && (
+        <div className="w-screen flex items-center justify-start px-6 py-4 bg-gray-100/95 absolute top-0 left-0 z-20">
+          <div className="relative flex-1 w-full max-w-xl">
+            <Input
+              type="search"
+              value={search}
+              onChange={handleInputChange}
+              placeholder="Digite para pesquisar..."
+              className="w-full"
+              onFocus={() => search.length >= 3 && setShowDropdown(true)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+            />
+            {showDropdown && (
+              <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-auto z-30">
+                {loading && (
+                  <div className="px-2 py-1 text-sm text-gray-500">
+                    Carregando...
+                  </div>
+                )}
+                {results.length === 0 && !loading && search.length >= 3 && (
+                  <div className="px-2 py-1 text-sm text-gray-500">
+                    Nenhum resultado
+                  </div>
+                )}
+                {results.map((item) => (
+                  <button
+                    key={item.properties.place_id}
+                    type="button"
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                    onMouseDown={() => handleSelect(item)}
+                  >
+                    {item.properties.formatted}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Mapa: ocupa a tela toda se expandido, ou só um rodapé se minimizado */}
+      <div
+        className={`fixed bottom-0 left-0 transition-all duration-300 ${
+          expanded
+            ? "w-screen h-screen z-10"
+            : "w-full h-0 max-w-md mx-auto mb-4 rounded-xl shadow-lg z-10 cursor-pointer"
+        } bg-white`}
+        style={{ right: 0 }}
+        onClick={() => !expanded && setExpanded(true)}
       >
-        <Marker
-          longitude={16.62662018}
-          latitude={49.2125578}
-          color="#61dbfb"
-        ></Marker>
-      </Map>
+        <Map
+          initialViewState={{
+            longitude: -122.4,
+            latitude: 37.8,
+            zoom: 14,
+          }}
+          {...viewState}
+          onZoom={(evt) => setViewState(evt.viewState)}
+          onDrag={(evt) => setViewState(evt.viewState)}
+          onClick={(e) => {
+            if (!expanded) return;
+            setClickedItem(e);
+            setOpen(true);
+          }}
+          style={{
+            width: "100%",
+            height: "100%",
+            borderRadius: expanded ? 0 : "1rem",
+            pointerEvents: expanded ? "auto" : "none",
+          }}
+          mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
+        >
+          <Marker
+            longitude={16.62662018}
+            latitude={49.2125578}
+            color="#61dbfb"
+          ></Marker>
+        </Map>
+        {!expanded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-xl">
+            <span className="text-white font-semibold">
+              Clique para expandir
+            </span>
+          </div>
+        )}
+      </div>
     </>
   );
 }
