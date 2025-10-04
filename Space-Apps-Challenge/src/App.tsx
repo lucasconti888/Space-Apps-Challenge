@@ -23,6 +23,8 @@ function App() {
     return clickedItem.lngLat || null;
   }, [clickedItem]);
 
+  const API_KEY_GEOAPP = "6744060a5fd549059bd59a466bae65b6";
+
   async function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
     setSearch(value);
@@ -34,23 +36,23 @@ function App() {
     setLoading(true);
     setShowDropdown(true);
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+      `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(
         value
-      )}`
+      )}&limit=5&apiKey=${API_KEY_GEOAPP}`
     );
     const data = await res.json();
-    setResults(data);
+    setResults(data.features); // Geoapify retorna features
     setLoading(false);
   }
 
   function handleSelect(place: any) {
     setViewState((vs) => ({
       ...vs,
-      longitude: parseFloat(place.lon),
-      latitude: parseFloat(place.lat),
+      longitude: place.geometry.coordinates[0],
+      latitude: place.geometry.coordinates[1],
       zoom: 14,
     }));
-    setSearch(place.display_name);
+    setSearch(place.properties.formatted);
     setShowDropdown(false);
   }
 
@@ -82,12 +84,12 @@ function App() {
               )}
               {results.map((item) => (
                 <button
-                  key={item.place_id}
+                  key={item.properties.place_id}
                   type="button"
                   className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
                   onMouseDown={() => handleSelect(item)}
                 >
-                  {item.display_name}
+                  {item.properties.formatted}
                 </button>
               ))}
             </div>
