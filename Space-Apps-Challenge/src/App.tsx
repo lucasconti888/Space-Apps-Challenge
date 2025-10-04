@@ -1,5 +1,5 @@
 import "maplibre-gl/dist/maplibre-gl.css";
-import Map from "react-map-gl/maplibre";
+import Map, { Marker } from "react-map-gl/maplibre";
 import "./App.css";
 import { Button } from "./components/ui/button";
 import {
@@ -41,7 +41,9 @@ function App() {
         }}
         style={{ width: "100vw", height: "100vh" }}
         mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
-      ></Map>
+      >
+        <Marker longitude={16.62662018} latitude={49.2125578} />
+      </Map>
     </>
   );
 }
