@@ -10,6 +10,11 @@ import Sidebar from "./components/drawer";
 
 function App() {
   const [clickedItem, setClickedItem] = useState<MapLayerMouseEvent>();
+  const [viewState, setViewState] = useState({
+    longitude: -100,
+    latitude: 40,
+    zoom: 3.5,
+  });
   const [open, setOpen] = useState(false);
 
   const item = useMemo(() => {
@@ -26,6 +31,8 @@ function App() {
           latitude: 37.8,
           zoom: 14,
         }}
+        {...viewState}
+        onDrag={(evt) => setViewState(evt.viewState)}
         onClick={(e) => {
           setClickedItem(e);
           setOpen(true);
