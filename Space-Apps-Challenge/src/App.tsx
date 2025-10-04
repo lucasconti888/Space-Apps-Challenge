@@ -32,6 +32,7 @@ function App() {
           zoom: 14,
         }}
         {...viewState}
+        onZoom={(evt) => setViewState(evt.viewState)}
         onDrag={(evt) => setViewState(evt.viewState)}
         onClick={(e) => {
           setClickedItem(e);
