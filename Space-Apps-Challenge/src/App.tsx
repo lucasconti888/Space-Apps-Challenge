@@ -8,6 +8,7 @@ import Map, { Marker, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import "./App.css";
 import Sidebar from "./components/drawer";
 import { Input } from "./components/ui/input";
+import LinearProgress from "@mui/material/LinearProgress";
 
 function App() {
   const [clickedItem, setClickedItem] = useState<MapLayerMouseEvent>();
@@ -87,6 +88,33 @@ function App() {
     { hour: "17:00", percent: "30%", cloud: true, moon: true, temp: "20°C" },
     { hour: "18:00", percent: "40%", cloud: true, moon: false, temp: "19°C" },
     { hour: "19:00", percent: "50%", cloud: false, moon: true, temp: "18°C" },
+  ];
+
+  // Exemplo de dados para os cards extras
+  const iqar = 72; // valor do IQAR
+  const cardsRow = [
+    { label: "Vento", value: "12 km/h", progress: 60, extra: "N" },
+    { label: "Umidade", value: "68%", progress: 68, extra: "" },
+    { label: "UV", value: "3", progress: 30, extra: "Moderado" },
+  ];
+  const cardsRow2 = [
+    { label: "Visibilidade", value: "8 km", progress: 80, extra: "" },
+    { label: "Pressão", value: "1012 hPa", progress: 50, extra: "" },
+    { label: "Chuva", value: "0 mm", progress: 0, extra: "Sem chuva" },
+  ];
+
+  // Exemplo de dados para os cards grandes
+  const bigCards = [
+    {
+      title: "Índice de Calor",
+      value: "27°C",
+      description: "Sensação térmica elevada devido à umidade.",
+    },
+    {
+      title: "Ponto de Orvalho",
+      value: "18°C",
+      description: "Condições favoráveis para formação de orvalho.",
+    },
   ];
 
   return (
@@ -209,7 +237,7 @@ function App() {
                 </div>
               </div>
 
-              <div className="w-full max-w-md mx-auto px-4 mt-4">
+              <div className="w-full max-w-md mx-auto mt-4">
                 <div className="bg-white/90 rounded-2xl shadow p-4 flex flex-col">
                   <span className="text-base text-left text-gray-700 font-semibold mb-2">
                     Radar
@@ -249,6 +277,66 @@ function App() {
                 </div>
               </div>
             </div>
+             {/* Card IQAR com progress bar */}
+      <div className="w-full max-w-md mx-auto px-4 mt-4">
+        <div className="bg-white/80 rounded-2xl shadow p-4 flex flex-col">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-base text-gray-700 font-semibold">IQAR</span>
+            <span className="text-lg font-bold text-gray-800">{iqar}</span>
+          </div>
+          <LinearProgress
+            variant="determinate"
+            value={iqar}
+            sx={{
+              height: 10,
+              borderRadius: 8,
+              backgroundColor: "#e5e7eb",
+              "& .MuiLinearProgress-bar": { backgroundColor: "#38bdf8" },
+            }}
+          />
+          <span className="text-xs text-gray-500 mt-2">
+            Índice de qualidade do ar razoável
+          </span>
+        </div>
+      </div>
+
+      {/* Linha de cards pequenos com progress, 3 vezes */}
+      {[cardsRow, cardsRow2, cardsRow].map((row, idx) => (
+        <div key={idx} className="w-full max-w-md mx-auto px-4 mt-4 flex gap-4">
+          {row.map((card, i) => (
+            <div key={i} className="flex-1 bg-white/80 rounded-2xl shadow p-4 flex flex-col items-start">
+              <span className="text-sm text-gray-500">{card.label}</span>
+              <span className="text-xl font-bold text-gray-800">{card.value}</span>
+              <LinearProgress
+                variant="determinate"
+                value={card.progress}
+                sx={{
+                  width: "100%",
+                  height: 8,
+                  borderRadius: 8,
+                  backgroundColor: "#e5e7eb",
+                  "& .MuiLinearProgress-bar": { backgroundColor: "#38bdf8" },
+                  marginTop: "0.5rem",
+                }}
+              />
+              {card.extra && (
+                <span className="text-xs text-gray-400 mt-1">{card.extra}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      ))}
+
+      {/* Dois cards grandes com dados */}
+      <div className="w-full max-w-md mx-auto px-4 mt-4 flex flex-col gap-4">
+        {bigCards.map((card, idx) => (
+          <div key={idx} className="bg-white/80 rounded-2xl shadow p-6 flex flex-col items-start">
+            <span className="text-lg font-semibold text-gray-700">{card.title}</span>
+            <span className="text-3xl font-bold text-gray-900 mt-2">{card.value}</span>
+            <span className="text-sm text-gray-500 mt-2">{card.description}</span>
+          </div>
+        ))}
+      </div>
           </div>
         )}
       </div>
@@ -340,6 +428,8 @@ function App() {
           </div>
         )}
       </div>
+
+     
     </>
   );
 }
