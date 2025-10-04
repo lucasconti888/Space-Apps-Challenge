@@ -1,19 +1,20 @@
-import { useState } from "react";
+import "maplibre-gl/dist/maplibre-gl.css";
+import Map from "react-map-gl/maplibre";
 import "./App.css";
-import { Button } from "./components/ui/button";
 
 function App() {
-  const [count, setCount] = useState(0);
+  // const [count, setCount] = useState(0);
 
   return (
-    <>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <Button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </Button>
-      </div>
-    </>
+     <Map
+      initialViewState={{
+        longitude: -122.4,
+        latitude: 37.8,
+        zoom: 14
+      }}
+      style={{width: 600, height: 400}}
+      mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
+    />
   );
 }
 
