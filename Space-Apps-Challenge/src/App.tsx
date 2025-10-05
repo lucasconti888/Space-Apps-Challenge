@@ -162,7 +162,7 @@ function App() {
 
       {expanded && hasLeftUserLoc && userLocation && (
         <div
-          className="absolute left-8 bottom-4 z-20 flex justify-left cursor-pointer"
+          className="absolute left-4 bottom-4 z-20 flex justify-left cursor-pointer"
           onClick={handleRecenter}
           aria-label="Recentrar no usuário"
         >
