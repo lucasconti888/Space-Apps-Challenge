@@ -1,14 +1,57 @@
+// App.tsx
 import CloudIcon from "@mui/icons-material/Cloud";
 import NightsStayIcon from "@mui/icons-material/NightsStay";
 import RoomIcon from "@mui/icons-material/Room";
 import WbSunnyIcon from "@mui/icons-material/WbSunny";
 import "maplibre-gl/dist/maplibre-gl.css";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Map, { Marker, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import "./App.css";
 import Sidebar from "./components/drawer";
 import { Input } from "./components/ui/input";
 import LinearProgress from "@mui/material/LinearProgress";
+
+const API_URL =
+  "https://weather-api-1063811848516.southamerica-east1.run.app/api/prediction";
+
+// ---------- Tipos ----------
+type ApiResponse = {
+  local: {
+    bounding_box?: { lat: number; long: number };
+    data_referencia?: string; // ISO
+  };
+  clima: {
+    temperatura_ar?: { valor: number; unidade: string }; // K
+    precipitacao?: { valor: number; unidade: string }; // kg m-2 s-1
+    vento?: { valor: number; unidade: string }; // m/s
+    radiacao_solar?: { valor: number; unidade: string }; // W m-2
+    ["umidade do ar"]?: { valor: number; unidade: string };
+    ["umidade do solo"]?: { valor: number; unidade: string };
+  };
+  resumo?: string;
+};
+
+// ---------- Helpers ----------
+function kToC(k?: number) {
+  if (k == null) return undefined;
+  return k - 273.15;
+}
+function msToKmh(ms?: number) {
+  if (ms == null) return undefined;
+  return ms * 3.6;
+}
+// 1 kg·m^-2 ≈ 1 mm; por segundo → ×3600 para mm/h
+function kgm2s1ToMmPerHour(val?: number) {
+  if (val == null) return undefined;
+  return val * 3600;
+}
+function fmt(n?: number, digits = 0) {
+  if (n == null || Number.isNaN(n)) return "—";
+  return n.toFixed(digits);
+}
+function log(...args: any[]) {
+  console.log("[prediction]", ...args);
+}
 
 function App() {
   const [clickedItem, setClickedItem] = useState<MapLayerMouseEvent>();
@@ -23,6 +66,19 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [expanded, setExpanded] = useState(false);
+
+  // Estados para previsão
+  const [isFetching, setIsFetching] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [locationLabel, setLocationLabel] = useState<string>("Pirituba");
+
+  const [tempC, setTempC] = useState<number | undefined>(undefined);
+  const [precipMmH, setPrecipMmH] = useState<number | undefined>(undefined);
+  const [windKmh, setWindKmh] = useState<number | undefined>(undefined);
+  const [radWm2, setRadWm2] = useState<number | undefined>(undefined);
+  const [rhPct, setRhPct] = useState<number | undefined>(undefined);
+  const [soilVal, setSoilVal] = useState<number | undefined>(undefined);
 
   const item = useMemo(() => {
     if (!clickedItem) return null;
@@ -41,100 +97,198 @@ function App() {
     }
     setLoading(true);
     setShowDropdown(true);
-    const res = await fetch(
-      `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(
-        value
-      )}&limit=5&apiKey=${API_KEY_GEOAPP}`
-    );
-    const data = await res.json();
-    setResults(data.features);
-    setLoading(false);
+    try {
+      const res = await fetch(
+        `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(
+          value
+        )}&limit=5&apiKey=${API_KEY_GEOAPP}`
+      );
+      const data = await res.json();
+      setResults(data.features);
+    } catch (err) {
+      console.error(err);
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Chama a API pública
+  async function fetchPrediction(lat: number, long: number, dateISO?: string) {
+    setIsFetching(true);
+    log("→ fetchPrediction called", { lat, long, dateISO });
+
+    const payload = {
+      lat,
+      long,
+      lon: long, // compatibilidade
+      date: dateISO ?? new Date().toISOString(),
+    };
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      log("← HTTP status", res.status);
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "(sem body)");
+        log("✖ erro HTTP", { status: res.status, text });
+        throw new Error(`HTTP ${res.status}: ${text}`);
+      }
+
+      const data: ApiResponse = await res.json();
+      log("✓ resposta JSON", data);
+
+      const tC = kToC(data?.clima?.temperatura_ar?.valor);
+      const vKmh = msToKmh(data?.clima?.vento?.valor);
+      const pMmH = kgm2s1ToMmPerHour(data?.clima?.precipitacao?.valor);
+
+      setTempC(tC);
+      setWindKmh(vKmh);
+      setPrecipMmH(pMmH);
+      setRadWm2(data?.clima?.radiacao_solar?.valor);
+
+      const rawUmid = data?.clima?.["umidade do ar"]?.valor;
+      let rh: number | undefined;
+      if (typeof rawUmid === "number") {
+        rh = rawUmid <= 1 ? rawUmid * 100 : rawUmid <= 100 ? rawUmid : undefined;
+      }
+      setRhPct(rh);
+
+      const rawSoil = data?.clima?.["umidade do solo"]?.valor;
+      setSoilVal(typeof rawSoil === "number" ? rawSoil : undefined);
+
+      setSummary(data?.resumo ?? null);
+      setLastUpdated(
+        data?.local?.data_referencia
+          ? new Date(data.local.data_referencia).toLocaleString()
+          : new Date().toLocaleString()
+      );
+    } catch (err: any) {
+      const msg = String(err?.message || err);
+      if (msg.includes("Failed to fetch") || msg.includes("TypeError")) {
+        log("⚠ possivel CORS/preflight bloqueado pelo navegador");
+      }
+      console.error(err);
+
+      setTempC(undefined);
+      setWindKmh(undefined);
+      setPrecipMmH(undefined);
+      setRadWm2(undefined);
+      setRhPct(undefined);
+      setSoilVal(undefined);
+      setSummary("Não foi possível obter a previsão no momento.");
+    } finally {
+      setIsFetching(false);
+    }
   }
 
   function handleSelect(place: any) {
-    setViewState((vs) => ({
-      ...vs,
-      longitude: place.geometry.coordinates[0],
-      latitude: place.geometry.coordinates[1],
-      zoom: 14,
-    }));
+    const longitude = place.geometry.coordinates[0];
+    const latitude = place.geometry.coordinates[1];
+    setViewState((vs) => ({ ...vs, longitude, latitude, zoom: 14 }));
     setSearch(place.properties.formatted);
+    setLocationLabel(place.properties.formatted);
     setShowDropdown(false);
+    fetchPrediction(latitude, longitude);
   }
 
-  // Exemplo de temperatura e condição (você pode substituir por dados reais)
-  const temperatura = "22°C";
-  const condicao = "Encoberto";
+  // Valores para UI
+  const temperatura =
+    tempC != null ? `${fmt(tempC, 0)}°C` : isFetching ? "..." : "—";
+  const condicao = summary ?? (isFetching ? "Buscando previsão..." : "Sem resumo");
+  const tempMax = tempC != null ? `${fmt(tempC + 2, 0)}º` : "—";
+  const tempMin = tempC != null ? `${fmt(tempC - 3, 0)}º` : "—";
+  const sensacao = tempC != null ? `Sensação térmica de ${fmt(tempC, 0)}º` : "—";
 
-  // Exemplo de temperatura máxima, mínima e sensação
-  const tempMax = "25º";
-  const tempMin = "19º";
-  const sensacao = "Sensação térmica de 24º";
-
-  // Exemplo de dados de previsão por hora
+  // Placeholders (seu endpoint não retorna hora-a-hora)
   const hourlyForecast = [
-    { hour: "09:00", temp: "20°C", type: "cloud" },
-    { hour: "10:00", temp: "21°C", type: "cloud" },
-    { hour: "11:00", temp: "22°C", type: "sun" },
-    { hour: "12:00", temp: "23°C", type: "sun" },
-    { hour: "13:00", temp: "24°C", type: "sun" },
-    { hour: "14:00", temp: "24°C", type: "cloud" },
+    { hour: "09:00", temp: temperatura, type: "cloud" },
+    { hour: "12:00", temp: temperatura, type: "sun" },
+    { hour: "15:00", temp: temperatura, type: "cloud" },
   ];
 
-  // Exemplo de dados para o grid extra
+  const probChuva = precipMmH != null ? Math.min(100, Math.round(precipMmH * 10)) : 0;
   const gridForecast = [
-    { hour: "15:00", percent: "20%", cloud: true, moon: false, temp: "22°C" },
-    { hour: "16:00", percent: "10%", cloud: false, moon: true, temp: "21°C" },
-    { hour: "17:00", percent: "30%", cloud: true, moon: true, temp: "20°C" },
-    { hour: "18:00", percent: "40%", cloud: true, moon: false, temp: "19°C" },
-    { hour: "19:00", percent: "50%", cloud: false, moon: true, temp: "18°C" },
+    { hour: "15:00", percent: `${probChuva}%`, cloud: true, moon: false, temp: temperatura },
+    { hour: "16:00", percent: `${Math.max(0, probChuva - 5)}%`, cloud: false, moon: true, temp: temperatura },
+    { hour: "17:00", percent: `${Math.max(0, probChuva - 10)}%`, cloud: true, moon: true, temp: temperatura },
   ];
 
-  // Exemplo de dados para os cards extras
-  const iqar = 72; // valor do IQAR
+  const iqar = 72; // placeholder
   const cardsRow = [
-    { label: "Vento", value: "12 km/h", progress: 60, extra: "N" },
-    { label: "Umidade", value: "68%", progress: 68, extra: "" },
-    { label: "UV", value: "3", progress: 30, extra: "Moderado" },
-  ];
-  const cardsRow2 = [
-    { label: "Visibilidade", value: "8 km", progress: 80, extra: "" },
-    { label: "Pressão", value: "1012 hPa", progress: 50, extra: "" },
-    { label: "Chuva", value: "0 mm", progress: 0, extra: "Sem chuva" },
+    {
+      label: "Vento",
+      value: windKmh != null ? `${fmt(windKmh, 0)} km/h` : "—",
+      progress: Math.min(100, Math.round((windKmh ?? 0) * 4)),
+      extra: "",
+    },
+    {
+      label: "Umidade",
+      value: rhPct != null ? `${fmt(rhPct, 0)}%` : "—",
+      progress: rhPct != null ? Math.round(rhPct) : 0,
+      extra: "",
+    },
+    {
+      label: "Radiação",
+      value: radWm2 != null ? `${fmt(radWm2, 0)} W/m²` : "—",
+      progress: Math.min(100, Math.round(((radWm2 ?? 0) / 1000) * 100)),
+      extra: "",
+    },
   ];
 
-  // Exemplo de dados para os cards grandes
   const bigCards = [
     {
       title: "Índice de Calor",
-      value: "27°C",
-      description: "Sensação térmica elevada devido à umidade.",
+      value: tempC != null ? `${fmt(tempC, 0)}°C` : "—",
+      description:
+        rhPct != null
+          ? "Sensação térmica estimada considerando a umidade."
+          : "Aguardando dados de umidade para sensação térmica.",
     },
     {
       title: "Ponto de Orvalho",
-      value: "18°C",
-      description: "Condições favoráveis para formação de orvalho.",
+      value:
+        tempC != null && rhPct != null
+          ? `${fmt(tempC - (100 - rhPct) / 5, 0)}°C`
+          : "—",
+      description: "Estimativa aproximada com base em T e UR.",
     },
   ];
 
+  // Chamada inicial (opcional para já popular a tela)
+  useEffect(() => {
+    fetchPrediction(viewState.latitude, viewState.longitude);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <>
-      <Sidebar item={item} open={open} setOpen={setOpen} />
+      <Sidebar item={clickedItem as any} open={open} setOpen={setOpen} />
 
       <div className="fixed top-4 z-30 flex flex-col items-start gap-2 max-h-[calc(100vh)] overflow-y-auto w-full">
         {!expanded && (
           <div className="text-2xl font-semibold text-white w-full">
             <div className="flex items-center gap-2 px-4 py-2 rounded-full ">
               <RoomIcon className="text-white" />
-              <span className="text-sm font-medium text-white">
-                {/* {viewState.latitude.toFixed(5)},{" "}
-                {viewState.longitude.toFixed(5)} */}
-                Pirituba
-              </span>
+              <span className="text-sm font-medium text-white">{locationLabel}</span>
+              {lastUpdated && (
+                <span className="text-xs text-white/80 ml-2">
+                  {isFetching ? "Atualizando..." : `Ref: ${lastUpdated}`}
+                </span>
+              )}
             </div>
+
             <div className="mt-8 flex flex-col items-start ml-6">
               <span className="text-6xl text-white">{temperatura}</span>
               <span className="text-2xl text-white mt-2">{condicao}</span>
+              <div className="text-sm text-white/80 mt-2">
+                Máx {tempMax} · Mín {tempMin} · {sensacao}
+              </div>
             </div>
 
             <div className="w-full max-w-md mx-auto px-4 mt-2">
@@ -178,69 +332,42 @@ function App() {
                 </div>
               </div>
             </div>
-            {/* Card IQAR com progress bar */}
-            <div className="w-full max-w-md mx-auto px-4 mt-4">
-              <div className="bg-black/20 rounded-2xl shadow p-4 flex flex-col">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-base text-white font-semibold">
-                    IQAR
+
+            {/* Linha única de cards pequenos */}
+            <div className="w-full max-w-md mx-auto px-4 mt-4 flex gap-4">
+              {cardsRow.map((card, i) => (
+                <div
+                  key={i}
+                  className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start"
+                >
+                  <span className="text-sm text-white">{card.label}</span>
+                  <span className="text-xl font-bold text-white">
+                    {card.value}
                   </span>
-                  <span className="text-lg font-bold text-white">{iqar}</span>
-                </div>
-                <LinearProgress
-                  variant="determinate"
-                  value={iqar}
-                  sx={{
-                    height: 10,
-                    borderRadius: 8,
-                    backgroundColor: "#e5e7eb",
-                    "& .MuiLinearProgress-bar": { backgroundColor: "#38bdf8" },
-                  }}
-                />
-                <span className="text-xs text-white mt-2">
-                  Índice de qualidade do ar razoável
-                </span>
-              </div>
-            </div>
-            {/* Linha de cards pequenos com progress, 3 vezes */}
-            {[cardsRow, cardsRow2, cardsRow].map((row, idx) => (
-              <div
-                key={idx}
-                className="w-full max-w-md mx-auto px-4 mt-4 flex gap-4"
-              >
-                {row.map((card, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start"
-                  >
-                    <span className="text-sm text-white">{card.label}</span>
-                    <span className="text-xl font-bold text-white">
-                      {card.value}
+                  <LinearProgress
+                    variant="determinate"
+                    value={card.progress}
+                    sx={{
+                      width: "100%",
+                      height: 8,
+                      borderRadius: 8,
+                      backgroundColor: "#e5e7eb",
+                      "& .MuiLinearProgress-bar": {
+                        backgroundColor: "#38bdf8",
+                      },
+                      marginTop: "0.5rem",
+                    }}
+                  />
+                  {card.extra && (
+                    <span className="text-xs text-white mt-1">
+                      {card.extra}
                     </span>
-                    <LinearProgress
-                      variant="determinate"
-                      value={card.progress}
-                      sx={{
-                        width: "100%",
-                        height: 8,
-                        borderRadius: 8,
-                        backgroundColor: "#e5e7eb",
-                        "& .MuiLinearProgress-bar": {
-                          backgroundColor: "#38bdf8",
-                        },
-                        marginTop: "0.5rem",
-                      }}
-                    />
-                    {card.extra && (
-                      <span className="text-xs text-white mt-1">
-                        {card.extra}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ))}
-            {/* Dois cards grandes com dados */}
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Cards grandes */}
             <div className="w-full max-w-md mx-auto px-4 mt-4 flex flex-col gap-4">
               {bigCards.map((card, idx) => (
                 <div
@@ -278,12 +405,12 @@ function App() {
             {showDropdown && (
               <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-auto z-30">
                 {loading && (
-                  <div className="px-2 py-1 text-sm text-white bg-transparent">
+                  <div className="px-2 py-1 text-sm text-gray-600">
                     Carregando...
                   </div>
                 )}
                 {results.length === 0 && !loading && search.length >= 3 && (
-                  <div className="px-2 py-1 text-sm text-white bg-transparent">
+                  <div className="px-2 py-1 text-sm text-gray-600">
                     Nenhum resultado
                   </div>
                 )}
@@ -291,7 +418,7 @@ function App() {
                   <button
                     key={item.properties.place_id}
                     type="button"
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm text-white bg-transparent"
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm text-gray-800"
                     onMouseDown={() => handleSelect(item)}
                     style={{ background: "transparent" }}
                   >
@@ -324,8 +451,16 @@ function App() {
           onDrag={(evt) => setViewState(evt.viewState)}
           onClick={(e) => {
             if (!expanded) return;
+            const { lngLat } = e;
             setClickedItem(e);
             setOpen(true);
+            setViewState((vs) => ({
+              ...vs,
+              longitude: lngLat.lng,
+              latitude: lngLat.lat,
+            }));
+            setLocationLabel(`${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`);
+            fetchPrediction(lngLat.lat, lngLat.lng);
           }}
           style={{
             width: "100%",
@@ -335,17 +470,15 @@ function App() {
           }}
           mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
         >
-          <Marker
-            longitude={16.62662018}
-            latitude={49.2125578}
+          {/* <Marker
+            longitude={viewState.longitude}
+            latitude={viewState.latitude}
             color="#61dbfb"
-          ></Marker>
+          /> */}
         </Map>
         {!expanded && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-xl">
-            <span className="text-white font-semibold">
-              Clique para expandir
-            </span>
+            <span className="text-white font-semibold">Clique para expandir</span>
           </div>
         )}
       </div>
