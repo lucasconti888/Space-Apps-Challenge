@@ -55,6 +55,7 @@ function App() {
         open={open}
         setOpen={setOpen}
         setValues={(data: string) => {
+          if (!viewState) return;
           fetchLocationName(viewState.latitude, viewState.longitude);
           fetchPrediction(viewState.latitude, viewState.longitude, data);
           setOpen(false);
@@ -254,8 +255,8 @@ function App() {
                     
                       <Map
                         initialViewState={{
-                          longitude: viewState.longitude,
-                          latitude: viewState.latitude,
+                          longitude: userLocation?.lng,
+                          latitude: userLocation?.lat,
                           zoom: 7,
                         }}
                         {...viewState}
@@ -268,8 +269,8 @@ function App() {
                         touchZoomRotate={false}
                       >
                         <Marker
-                          longitude={viewState.longitude}
-                          latitude={viewState.latitude}
+                          longitude={userLocation?.lng ?? 0}
+                          latitude={userLocation?.lat ?? 0}
                           color="#61dbfb"
                         />
                       </Map>

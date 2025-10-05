@@ -1,5 +1,5 @@
 import type { MapLayerMouseEvent } from "maplibre-gl";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { ApiResponse } from "./App.types";
 import { API_URL, BG_IMAGES, getBgFromApi } from "./App.utils";
 
@@ -7,11 +7,10 @@ const API_KEY_GEOAPP = "6744060a5fd549059bd59a466bae65b6";
 
 export const useApp = () => {
   const [clickedItem, setClickedItem] = useState<MapLayerMouseEvent>();
-  const [viewState, setViewState] = useState({
-    latitude: -23.5,
-    longitude: -46.6,
-    zoom: 12,
-  });
+  const [viewState, setViewState] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>();
   const [viewToPredict, setViewToPredict] = useState({
     latitude: -23.5,
     longitude: -46.6,
@@ -41,6 +40,9 @@ export const useApp = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [hasLeftUserLoc, setHasLeftUserLoc] = useState(false);
   const [understood, setUnderstood] = useState(false);
+
+  // Ref para controlar se já inicializou a busca inicial
+  const hasFetchedInitial = useRef(false);
 
   // Busca nome do local (apenas quando viewToPredict muda)
   async function fetchLocationName(lat: number, lng: number) {
@@ -100,37 +102,57 @@ export const useApp = () => {
     }
   }
 
-  // Ao montar, pega a localização do usuário e inicializa tudo
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          setUserLocation({ lat: latitude, lng: longitude });
-          setViewState((vs) => ({
-            ...vs,
-            latitude,
-            longitude,
-            zoom: 12,
-          }));
-          setViewToPredict({
-            latitude,
-            longitude,
-          });
-        },
-        () => {
-          setUserLocation(null);
-          // Mantém o valor default
-        }
-      );
-    }
-  }, []);
+  // Ref para controlar se já inicializou a busca inicial
 
-  // Só busca o nome do local e previsão quando viewToPredict mudar
-  useEffect(() => {
+
+// Ao montar, pega a localização do usuário e inicializa tudo
+useEffect(() => {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        setViewState((vs) => ({
+          ...vs,
+          latitude,
+          longitude,
+          zoom: 12,
+        }));
+        setViewToPredict({
+          latitude,
+          longitude,
+        });
+      },
+      () => {
+        setUserLocation(null);
+        // Mantém o valor default
+      }
+    );
+  }
+}, []);
+
+// Só busca o nome do local e previsão quando viewToPredict mudar
+useEffect(() => {
+  // Só executa a busca inicial UMA vez, quando a localização do usuário for definida
+  if (
+    !hasFetchedInitial.current &&
+    userLocation &&
+    viewToPredict.latitude === userLocation.lat &&
+    viewToPredict.longitude === userLocation.lng
+  ) {
+    hasFetchedInitial.current = true;
     fetchLocationName(viewToPredict.latitude, viewToPredict.longitude);
     fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
-  }, [viewToPredict.latitude, viewToPredict.longitude]);
+    return;
+  }
+
+  // Para as demais mudanças de viewToPredict (após inicialização)
+  if (hasFetchedInitial.current) {
+    fetchLocationName(viewToPredict.latitude, viewToPredict.longitude);
+    fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [viewToPredict.latitude, viewToPredict.longitude, userLocation]);
 
   useEffect(() => {
     setBgUrl(getBgFromApi(apiData));
@@ -210,22 +232,15 @@ export const useApp = () => {
 
   useEffect(() => {
     if (
-      userLocation &&
-      (Math.abs(viewState.latitude - userLocation.lat) > 0.0005 ||
-        Math.abs(viewState.longitude - userLocation.lng) > 0.0005)
+      userLocation && viewState &&
+      (Math.abs((viewState?.latitude) - userLocation.lat) > 0.0005 ||
+        Math.abs(viewState?.longitude - userLocation.lng) > 0.0005)
     ) {
       setHasLeftUserLoc(true);
     } else {
       setHasLeftUserLoc(false);
     }
-  }, [viewState.latitude, viewState.longitude, userLocation]);
-
-  useEffect(() => {
-    if (viewToPredict) {
-      fetchLocationName(viewToPredict.latitude, viewToPredict.longitude);
-      fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
-    }
-  }, [viewToPredict]);
+  }, [viewState?.latitude, viewState?.longitude, userLocation, viewState]);
 
   return {
     clickedItem,
