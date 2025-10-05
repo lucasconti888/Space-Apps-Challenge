@@ -382,7 +382,7 @@ function App() {
                     opacity: 0.7;
                   }
                   70% {
-                    transform: scale(1.3);
+                    transform: scale(1);
                     opacity: 0.2;
                   }
                   100% {
