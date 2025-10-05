@@ -18,8 +18,6 @@ export const useApp = () => {
   });
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [results, setResults] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [apiData, setApiData] = useState<ApiResponse | undefined>(undefined);
@@ -38,6 +36,8 @@ export const useApp = () => {
     lat: number;
     lng: number;
   } | null>(null);
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Busca nome do local (apenas quando viewToPredict muda)
   async function fetchLocationName(lat: number, lng: number) {
@@ -163,6 +163,31 @@ export const useApp = () => {
     setExpanded(false);
   }
 
+  async function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value;
+    setSearch(value);
+    if (value.length < 3) {
+      setResults([]);
+      setShowDropdown(false);
+      return;
+    }
+    setLoading(true);
+    setShowDropdown(true);
+    try {
+      const res = await fetch(
+        `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(
+          value
+        )}&limit=5&apiKey=${API_KEY_GEOAPP}`
+      );
+      const data = await res.json();
+      setResults(data.features || []);
+    } catch (err) {
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return {
     clickedItem,
     bgUrl,
@@ -176,11 +201,11 @@ export const useApp = () => {
     open,
     search,
     showDropdown,
-    loading,
-    results,
     apiData,
     summary,
     viewState,
+    results,
+    loading,
     setClickedItem,
     setOpen,
     fetchPrediction,
@@ -194,5 +219,6 @@ export const useApp = () => {
     setViewToPredict,
     handleMapClick,
     handleGoToUserLocation,
+    handleInputChange,
   };
 };

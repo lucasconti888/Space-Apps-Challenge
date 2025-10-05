@@ -23,9 +23,9 @@ function App() {
     open,
     search,
     userLocation,
-    showDropdown,
-    loading,
     results,
+    loading,
+    showDropdown,
     summary,
     viewState,
     apiData,
@@ -36,9 +36,8 @@ function App() {
     handleSelect,
     setViewState,
     setExpanded,
-    setClickedMarkers,
+    setClickedMarkers,handleInputChange,
     setLocationLabel,
-    handleInputChange,
   } = useApp();
 
   const { bigCards, cardsRow, sensacao, tempMax, tempMin, temperatura } =
@@ -91,9 +90,9 @@ function App() {
               <Input
                 type="search"
                 value={search}
-                onChange={handleInputChange}
                 placeholder="Digite para pesquisar..."
                 className="w-full bg-transparent outline-none text-gray-800 placeholder-gray-400 border-0 shadow-none"
+                onInput={handleInputChange}
                 onFocus={() => search.length >= 3 && setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
                 style={{ boxShadow: "none" }}
@@ -334,47 +333,47 @@ function App() {
           >
             {userLocation && (
               <Marker
-              longitude={userLocation.lng}
-              latitude={userLocation.lat}
-              anchor="center"
+                longitude={userLocation.lng}
+                latitude={userLocation.lat}
+                anchor="center"
               >
-              <div
-                style={{
-                position: "relative",
-                width: 40,
-                height: 40,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                }}
-              >
-                {/* Outer pulsing circle */}
-                <span
-                style={{
-                  position: "absolute",
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  background: "rgba(37,99,235,0.25)",
-                  animation: "pulse 1.5s infinite",
-                  zIndex: 1,
-                }}
-                />
-                {/* Inner solid circle */}
-                <span
-                style={{
-                  position: "absolute",
-                  width: 18,
-                  height: 18,
-                  borderRadius: "50%",
-                  background: "rgba(37,99,235,1)",
-                  border: "2px solid #fff",
-                  zIndex: 2,
-                  boxShadow: "0 2px 8px 0 rgba(37,99,235,0.25)",
-                }}
-                />
-                <style>
-                {`
+                <div
+                  style={{
+                    position: "relative",
+                    width: 40,
+                    height: 40,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {/* Outer pulsing circle */}
+                  <span
+                    style={{
+                      position: "absolute",
+                      width: 40,
+                      height: 40,
+                      borderRadius: "50%",
+                      background: "rgba(37,99,235,0.25)",
+                      animation: "pulse 1.5s infinite",
+                      zIndex: 1,
+                    }}
+                  />
+                  {/* Inner solid circle */}
+                  <span
+                    style={{
+                      position: "absolute",
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      background: "rgba(37,99,235,1)",
+                      border: "2px solid #fff",
+                      zIndex: 2,
+                      boxShadow: "0 2px 8px 0 rgba(37,99,235,0.25)",
+                    }}
+                  />
+                  <style>
+                    {`
                   @keyframes pulse {
                   0% {
                     transform: scale(0.8);
@@ -390,8 +389,8 @@ function App() {
                   }
                   }
                 `}
-                </style>
-              </div>
+                  </style>
+                </div>
               </Marker>
             )}
             {clickedMarkers.map((marker, idx) => (
