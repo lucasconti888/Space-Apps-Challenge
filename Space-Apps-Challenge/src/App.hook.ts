@@ -7,11 +7,11 @@ const API_KEY_GEOAPP = "6744060a5fd549059bd59a466bae65b6";
 
 export const useApp = () => {
   const [clickedItem, setClickedItem] = useState<MapLayerMouseEvent>();
-  const [viewState, setViewState] = useState({
-    latitude: -23.5,
-    longitude: -46.6,
-    zoom: 12,
-  });
+  const [viewState, setViewState] = useState<{
+    latitude: number;
+    longitude: number;
+    zoom: number;
+  }>();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<any[]>([]);
@@ -166,6 +166,8 @@ export const useApp = () => {
   }, []);
 
   useEffect(() => {
+    if (!viewState?.latitude || !viewState?.longitude) return;
+
     async function fetchLocationName(lat: number, lng: number) {
       setLocationLoading(true);
       try {
@@ -186,18 +188,26 @@ export const useApp = () => {
         setLocationLoading(false);
       }
     }
-    if (viewState.latitude !== -23.5 && viewState.longitude !== -46.6) {
-      fetchLocationName(viewState.latitude, viewState.longitude);
+    if (viewState?.latitude !== -23.5 && viewState?.longitude !== -46.6) {
+      fetchLocationName(viewState?.latitude, viewState?.longitude);
     }
-  }, [viewState.latitude, viewState.longitude]);
+  }, [viewState]);
 
   useEffect(() => {
     setBgUrl(getBgFromApi(apiData));
   }, [apiData]);
 
   useEffect(() => {
+    if (!viewState?.latitude || !viewState?.longitude) return;
+
     fetchLocationName(viewState.latitude, viewState.longitude);
-  }, [viewState.latitude, viewState.longitude]);
+  }, [viewState]);
+
+  useEffect(() => {
+    if (!viewState?.latitude || !viewState?.longitude) return;
+
+    fetchPrediction(viewState.latitude, viewState.longitude);
+  }, [viewState]);
 
   return {
     clickedItem,
