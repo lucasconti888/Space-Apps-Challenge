@@ -25,10 +25,8 @@ const BG_IMAGES: Record<string, string> = {
     "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1280&q=80",
   chuva:
     "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=1280&q=80",
-  sol:
-    "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&w=1280&q=80",
-  neve:
-    "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=1280&q=80",
+  sol: "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&w=1280&q=80",
+  neve: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=1280&q=80",
   nublado:
     "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1280&q=80",
   noite:
@@ -251,7 +249,9 @@ function App() {
             if (data.features && data.features[0]) {
               setLocationLabel(data.features[0].properties.formatted);
             } else {
-              setLocationLabel(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+              setLocationLabel(
+                `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
+              );
             }
           } catch {
             setLocationLabel(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
@@ -291,10 +291,7 @@ function App() {
       }
     }
     // Só busca se não for a primeira vez (evita duplo fetch ao abrir)
-    if (
-      viewState.latitude !== -23.5 &&
-      viewState.longitude !== -46.6
-    ) {
+    if (viewState.latitude !== -23.5 && viewState.longitude !== -46.6) {
       fetchLocationName(viewState.latitude, viewState.longitude);
     }
   }, [viewState.latitude, viewState.longitude]);
@@ -328,6 +325,11 @@ function App() {
   useEffect(() => {
     fetchLocationName(viewState.latitude, viewState.longitude);
   }, [viewState.latitude, viewState.longitude]);
+
+  // Adicione um state para armazenar os pontos clicados:
+  const [clickedMarkers, setClickedMarkers] = useState<
+    { lat: number; lng: number }[]
+  >([]);
 
   return (
     <div
@@ -365,9 +367,11 @@ function App() {
               <div className="flex items-center gap-3 px-4 py-2 rounded-full ml-6 mt-8">
                 <RoomIcon className="text-white" />
                 <span className="text-lg text-left font-medium text-white">
-                  {locationLoading
-                    ? <Skeleton className="w-24 h-5 bg-white/30" />
-                    : locationLabel}
+                  {locationLoading ? (
+                    <Skeleton className="w-24 h-5 bg-white/30" />
+                  ) : (
+                    locationLabel
+                  )}
                 </span>
                 {lastUpdated && (
                   <span className="text-xs text-white/80 ml-2">
@@ -407,7 +411,9 @@ function App() {
                 {isFetching ? (
                   <Skeleton className="w-48 h-4 bg-white/30" />
                 ) : (
-                  <>Máx {tempMax} · Mín {tempMin} · {sensacao}</>
+                  <>
+                    Máx {tempMax} · Mín {tempMin} · {sensacao}
+                  </>
                 )}
               </div>
 
@@ -502,7 +508,10 @@ function App() {
               <div className="w-full max-w-md mx-auto px-4 mt-4 flex flex-col gap-4">
                 {isFetching
                   ? Array.from({ length: 3 }).map((_, i) => (
-                      <Skeleton key={i} className="h-24 rounded-2xl bg-white/20" />
+                      <Skeleton
+                        key={i}
+                        className="h-24 rounded-2xl bg-white/20"
+                      />
                     ))
                   : bigCards.map((card, idx) => (
                       <div
@@ -520,8 +529,8 @@ function App() {
                         </span>
                       </div>
                     ))}
+              </div>
             </div>
-          </div>
           </div>
         )}
 
@@ -585,8 +594,12 @@ function App() {
             onZoom={(evt) => setViewState(evt.viewState)}
             onDrag={(evt) => setViewState(evt.viewState)}
             onClick={(e) => {
-              if (!expanded) return;
               const { lngLat } = e;
+              // Adiciona um novo marcador onde clicou
+              setClickedMarkers(() => [
+                { lat: lngLat.lat, lng: lngLat.lng },
+              ]);
+              if (!expanded) return;
               setClickedItem(e);
               setOpen(true);
               setViewState((vs) => ({
@@ -612,6 +625,14 @@ function App() {
             latitude={viewState.latitude}
             color="#61dbfb"
           /> */}
+            {clickedMarkers.map((marker, idx) => (
+              <Marker
+                key={idx}
+                longitude={marker.lng}
+                latitude={marker.lat}
+                color="#f59e42"
+              />
+            ))}
           </Map>
           {!expanded && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-xl">
