@@ -1,6 +1,6 @@
 import RoomIcon from "@mui/icons-material/Room";
 import LinearProgress from "@mui/material/LinearProgress";
-import { ChevronLeftIcon, Menu as MenuIcon, Search as SearchIcon } from "lucide-react";
+import { ChevronLeftIcon, Search as SearchIcon } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import Map, { Marker } from "react-map-gl/maplibre";
 import "./App.css";
@@ -22,6 +22,7 @@ function App() {
     locationLoading,
     open,
     search,
+    userLocation,
     showDropdown,
     loading,
     results,
@@ -75,16 +76,15 @@ function App() {
           <div className="absolute top-6 left-0 flex flex-row items-center gap-3 z-30 w-full px-4">
             <div className="flex" style={{ width: "15%" }}>
               <button
-                className="bg-white/90 hover:bg-white rounded-full p-2 shadow-lg border border-gray-200 transition w-10 h-10 flex items-center justify-center"
+                className="bg-[#f3f4f6] hover:bg-white rounded-full p-2 shadow-lg border border-gray-200 transition w-10 flex items-center justify-center"
                 onClick={() => setExpanded(false)}
                 aria-label="Voltar ao menu"
-                style={{ minWidth: 40, minHeight: 40 }}
               >
                 <ChevronLeftIcon className="w-5 h-5 text-gray-700" />
               </button>
             </div>
             <div
-              className="flex items-center bg-white/90 rounded-full shadow-lg border border-gray-200 px-3 py-2 relative"
+              className="flex items-center bg-[#f3f4f6] rounded-md shadow-lg border border-gray-200 px-3 py-2 relative"
               style={{ width: "80%" }}
             >
               <SearchIcon className="w-5 h-5 text-gray-400 mr-2" />
@@ -315,10 +315,7 @@ function App() {
             onDrag={(evt) => setViewState(evt.viewState)}
             onClick={(e) => {
               const { lngLat } = e;
-              setClickedMarkers((prev) => [
-                ...prev,
-                { lat: lngLat.lat, lng: lngLat.lng },
-              ]);
+              setClickedMarkers(() => [{ lat: lngLat.lat, lng: lngLat.lng }]);
               if (!expanded) return;
               setClickedItem(e);
               setOpen(true);
@@ -340,6 +337,28 @@ function App() {
             }}
             mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
           >
+            {userLocation && (
+              <Marker
+              longitude={userLocation.lng}
+              latitude={userLocation.lat}
+              color="#2563eb"
+              >
+              <div
+                style={{
+                background: "rgba(37,99,235,0.9)",
+                color: "#fff",
+                padding: "8px 16px",
+                borderRadius: "12px",
+                fontWeight: 600,
+                fontSize: "1.1rem",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                whiteSpace: "nowrap",
+                }}
+              >
+                Você está aqui
+              </div>
+              </Marker>
+            )}
             {clickedMarkers.map((marker, idx) => (
               <Marker
                 key={idx}

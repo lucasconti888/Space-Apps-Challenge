@@ -30,6 +30,10 @@ export const useApp = () => {
   const [clickedMarkers, setClickedMarkers] = useState<
     { lat: number; lng: number }[]
   >([]);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   async function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
@@ -209,12 +213,27 @@ export const useApp = () => {
     fetchPrediction(viewState.latitude, viewState.longitude);
   }, [viewState]);
 
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+        },
+        () => setUserLocation(null)
+      );
+    }
+  }, []);
+
   return {
     clickedItem,
     bgUrl,
     expanded,
     clickedMarkers,
     isFetching,
+    userLocation,
     lastUpdated,
     locationLabel,
     locationLoading,
