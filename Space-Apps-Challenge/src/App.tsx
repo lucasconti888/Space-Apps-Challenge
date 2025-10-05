@@ -223,7 +223,15 @@ function App() {
 
   return (
     <>
-      <Sidebar item={clickedItem as any} open={open} setOpen={setOpen} />
+      <Sidebar
+        item={clickedItem as any}
+        open={open}
+        setOpen={setOpen}
+        onGoToData={() => {
+          setOpen(false);
+          setExpanded(false); // Fecha o mapa expandido ao ir para os dados
+        }}
+      />
 
       {/* Fundo escuro translúcido */}
       <div
