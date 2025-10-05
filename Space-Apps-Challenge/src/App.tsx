@@ -2,6 +2,7 @@ import RoomIcon from "@mui/icons-material/Room";
 import LinearProgress from "@mui/material/LinearProgress";
 import { ChevronLeftIcon, Search as SearchIcon } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { useEffect, useState } from "react";
 import Map, { Marker } from "react-map-gl/maplibre";
 import "./App.css";
 import { useApp } from "./App.hook";
@@ -43,28 +44,94 @@ function App() {
   const { bigCards, cardsRow, sensacao, tempMax, tempMin, temperatura } =
     extractWeatherData(apiData);
 
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [hasLeftUserLoc, setHasLeftUserLoc] = useState(false);
+  const [understood, setUnderstood] = useState(false);
+
+  useEffect(() => {
+    if (expanded && !understood) {
+      setShowTutorial(true);
+    }
+  }, [expanded, understood]);
+
+  useEffect(() => {
+    if (
+      userLocation &&
+      (Math.abs(viewState.latitude - userLocation.lat) > 0.0005 ||
+        Math.abs(viewState.longitude - userLocation.lng) > 0.0005)
+    ) {
+      setHasLeftUserLoc(true);
+    } else {
+      setHasLeftUserLoc(false);
+    }
+  }, [viewState.latitude, viewState.longitude, userLocation]);
+
+  const handleRecenter = () => {
+    if (userLocation) {
+      setViewState((vs) => ({
+        ...vs,
+        latitude: userLocation.lat,
+        longitude: userLocation.lng,
+        zoom: 12,
+      }));
+    }
+  };
+
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        minWidth: "100vw",
-        backgroundImage: `url('${bgUrl}')`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        transition: "background-image 0.5s",
-      }}
-    >
-      <>
+    <>
+      {/* Conteúdo principal */}
+      <div
+        style={{
+          minHeight: "100vh",
+          minWidth: "100vw",
+          backgroundImage: `url('${bgUrl}')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          transition: "background-image 0.5s",
+        }}
+      >
+        {/* Botão de recentralizar */}
+        {hasLeftUserLoc && userLocation && (
+          <button
+            className="fixed bottom-8 right-8 z-40 bg-white shadow-lg rounded-full p-3 border border-gray-200 hover:bg-blue-50 transition"
+            onClick={handleRecenter}
+            aria-label="Recentrar no usuário"
+          >
+            <svg
+              width="24"
+              height="24"
+              fill="none"
+              stroke="#2563eb"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="3" fill="#2563eb" />
+              <line x1="12" y1="2" x2="12" y2="6" />
+              <line x1="12" y1="18" x2="12" y2="22" />
+              <line x1="2" y1="12" x2="6" y2="12" />
+              <line x1="18" y1="12" x2="22" y2="12" />
+            </svg>
+          </button>
+        )}
+
         <Sidebar
           item={clickedItem as any}
           open={open}
           setOpen={setOpen}
           onGoToData={() => {
             if (userLocation) {
+              setViewState((vs) => ({
+                ...vs,
+                latitude: userLocation.lat,
+                longitude: userLocation.lng,
+                zoom: 12,
+              }));
               setViewToPredict({
-                latitude: viewState.latitude,
-                longitude: viewState.longitude,
+                latitude: userLocation.lat,
+                longitude: userLocation.lng,
               });
             }
             setOpen(false);
@@ -128,6 +195,34 @@ function App() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Tutorial abaixo da search bar, centralizado */}
+        {expanded && showTutorial && (
+          <div className="absolute left-0 right-0 top-[20rem] z-40 flex justify-center pointer-events-none">
+            <div
+              className="bg-white rounded-xl shadow-lg p-6 max-w-xs text-center flex flex-col items-center pointer-events-auto"
+              style={{ marginTop: 24 }} // Adiciona margin top
+            >
+              <span className="text-2xl mb-2">👆</span>
+              <h2 className="text-lg font-semibold mb-2">
+                Clique no local desejado
+              </h2>
+              <p className="text-gray-700 mb-4">
+                Clique no mapa para obter as informações climáticas do local
+                selecionado.
+              </p>
+              <button
+                className="bg-blue-600 text-white px-6 py-2 rounded-full font-semibold shadow hover:bg-blue-700 transition"
+                onClick={() => {
+                  setShowTutorial(false);
+                  setUnderstood(true);
+                }}
+              >
+                Entendi!
+              </button>
             </div>
           </div>
         )}
@@ -405,8 +500,8 @@ function App() {
             ))}
           </Map>
         </div>
-      </>
-    </div>
+      </div>
+    </>
   );
 }
 
