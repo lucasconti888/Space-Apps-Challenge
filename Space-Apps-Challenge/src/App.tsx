@@ -138,14 +138,14 @@ function App() {
               </span>
               <span className="text-2xl text-white mt-2">{condicao}</span>
             </div>
-            <div className="flex flex-col items-start mt-6 mb-2 ml-8">
+            {/* <div className="flex flex-col items-start mt-6 mb-2 ml-8">
               <span className="text-lg text-white font-medium">
                 {tempMax} / <span className="text-white">{tempMin}</span>
               </span>
               <span className="text-base text-white">{sensacao}</span>
-            </div>
+            </div> */}
             <div className="w-full max-w-md mx-auto px-4 mt-2">
-              <div className="bg-black/20 rounded-2xl shadow p-4 flex flex-col">
+              {/* <div className="bg-black/20 rounded-2xl shadow p-4 flex flex-col">
                 <div className="w-full flex items-center justify-between pb-2 text-left">
                   <span className="block text-base text-white font-medium">
                     Nublado. Máxima de 24 a 26ºC e mínimas de 18 a 20ºC
@@ -228,7 +228,7 @@ function App() {
                     </React.Fragment>
                   ))}
                 </div>
-              </div>
+              </div> */}
               <div className="w-full max-w-md mx-auto mt-4">
                 <div className="bg-black/20 rounded-2xl shadow p-4 flex flex-col">
                   <span className="text-base text-left text-white font-semibold mb-2">
