@@ -8,6 +8,7 @@ import type { ApiResponse } from "./App";
 import "./App.css";
 import Sidebar from "./components/drawer";
 import { Input } from "./components/ui/input";
+import { Skeleton } from "./components/ui/skeleton";
 
 const API_URL =
   "https://weather-api-1063811848516.southamerica-east1.run.app/api/prediction";
@@ -144,17 +145,13 @@ function App() {
     fetchPrediction(latitude, longitude);
   }
 
-  // Valores para UI
   const temperatura =
     tempC != null ? `${fmt(tempC, 1)}°C` : isFetching ? "..." : "—";
-  const condicao =
-    summary ?? (isFetching ? "Buscando previsão..." : "Sem resumo");
   const tempMax = tempC != null ? `${fmt(tempC + 2, 0)}º` : "—";
   const tempMin = tempC != null ? `${fmt(tempC - 3, 0)}º` : "—";
   const sensacao =
     tempC != null ? `Sensação térmica de ${fmt(tempC, 1)}º` : "—";
 
-  // Cards pequenos (sem duplicidade)
   const cardsRow = [
     {
       label: "Vento",
@@ -177,7 +174,6 @@ function App() {
     },
   ];
 
-  // Cards grandes
   const bigCards = [
     {
       title: "Precipitação",
@@ -202,7 +198,6 @@ function App() {
     },
   ];
 
-  // Detecta localização do usuário ao carregar e faz fetchPrediction
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -224,9 +219,7 @@ function App() {
     } else {
       fetchPrediction(viewState.latitude, viewState.longitude);
     }
-    // Não inclua fetchPrediction ou viewState no array de dependências!
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [viewState.latitude, viewState.longitude]);
 
   return (
     <>
@@ -241,24 +234,56 @@ function App() {
       {!expanded && (
         <div className="fixed top-4 z-30 flex flex-col items-start gap-2 max-h-[calc(100vh)] overflow-y-auto w-full">
           <div className="text-2xl font-semibold text-white w-full">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full ">
+            {/* Header: Localização ao lado da temperatura */}
+            <div className="flex items-center gap-3 px-4 py-2 rounded-full ml-6 mt-8">
               <RoomIcon className="text-white" />
-              <span className="text-sm font-medium text-white">
-                {locationLabel}
+              <span className="text-lg font-medium text-white">
+                {isFetching ? (
+                  <Skeleton className="w-24 h-5 bg-white/30" />
+                ) : (
+                  locationLabel
+                )}
               </span>
               {lastUpdated && (
                 <span className="text-xs text-white/80 ml-2">
-                  {isFetching ? "Atualizando..." : `Ref: ${lastUpdated}`}
+                  {isFetching ? (
+                    <Skeleton className="w-20 h-4 bg-white/30" />
+                  ) : (
+                    `Ref: ${lastUpdated}`
+                  )}
                 </span>
               )}
             </div>
 
-            <div className="mt-8 flex flex-col items-start ml-6">
-              <span className="text-6xl text-white">{temperatura}</span>
-              <span className="text-2xl text-white mt-2">{condicao}</span>
-              <div className="text-sm text-white/80 mt-2">
-                Máx {tempMax} · Mín {tempMin} · {sensacao}
-              </div>
+            {/* Temperatura e resumo */}
+            <div className="flex flex-row items-end ml-6 mt-2">
+              <span className="text-6xl text-white leading-none">
+                {isFetching ? (
+                  <Skeleton className="w-32 h-12 bg-white/30" />
+                ) : (
+                  temperatura
+                )}
+              </span>
+            </div>
+
+            {/* Resumo da API, estilizado e alinhado à esquerda */}
+            <div className="max-w-md mx-auto mt-4 px-4 text-left">
+              <span className="block text-white text-lg font-normal leading-relaxed">
+                {isFetching ? (
+                  <Skeleton className="w-full h-6 bg-white/20" />
+                ) : (
+                  summary
+                )}
+              </span>
+            </div>
+
+            {/* Máx, Mín, Sensação */}
+            <div className="text-sm text-white/80 mt-4 ml-8">
+              {isFetching ? (
+                <Skeleton className="w-48 h-4 bg-white/30" />
+              ) : (
+                <>Máx {tempMax} · Mín {tempMin} · {sensacao}</>
+              )}
             </div>
 
             <div className="w-full max-w-md mx-auto px-4 mt-2">
@@ -272,27 +297,31 @@ function App() {
                     style={{ border: "2px solid #e5e7eb" }}
                     onClick={() => setExpanded(true)}
                   >
-                    <Map
-                      initialViewState={{
-                        longitude: viewState.longitude,
-                        latitude: viewState.latitude,
-                        zoom: 7,
-                      }}
-                      {...viewState}
-                      style={{ width: "100%", height: "100%" }}
-                      mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
-                      dragPan={false}
-                      dragRotate={false}
-                      scrollZoom={false}
-                      doubleClickZoom={false}
-                      touchZoomRotate={false}
-                    >
-                      <Marker
-                        longitude={viewState.longitude}
-                        latitude={viewState.latitude}
-                        color="#61dbfb"
-                      />
-                    </Map>
+                    {isFetching ? (
+                      <Skeleton className="w-full h-full rounded-xl bg-white/20" />
+                    ) : (
+                      <Map
+                        initialViewState={{
+                          longitude: viewState.longitude,
+                          latitude: viewState.latitude,
+                          zoom: 7,
+                        }}
+                        {...viewState}
+                        style={{ width: "100%", height: "100%" }}
+                        mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
+                        dragPan={false}
+                        dragRotate={false}
+                        scrollZoom={false}
+                        doubleClickZoom={false}
+                        touchZoomRotate={false}
+                      >
+                        <Marker
+                          longitude={viewState.longitude}
+                          latitude={viewState.latitude}
+                          color="#61dbfb"
+                        />
+                      </Map>
+                    )}
                     <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                       <span className="text-white font-semibold text-sm">
                         Clique para expandir
@@ -305,56 +334,67 @@ function App() {
 
             {/* Linha única de cards pequenos */}
             <div className="w-full max-w-md mx-auto px-4 mt-4 flex gap-4">
-              {cardsRow.map((card, i) => (
-                <div
-                  key={i}
-                  className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start"
-                >
-                  <span className="text-sm text-white">{card.label}</span>
-                  <span className="text-xl font-bold text-white">
-                    {card.value}
-                  </span>
-                  <LinearProgress
-                    variant="determinate"
-                    value={card.progress}
-                    sx={{
-                      width: "100%",
-                      height: 8,
-                      borderRadius: 8,
-                      backgroundColor: "#e5e7eb",
-                      "& .MuiLinearProgress-bar": {
-                        backgroundColor: "#38bdf8",
-                      },
-                      marginTop: "0.5rem",
-                    }}
-                  />
-                  {card.extra && (
-                    <span className="text-xs text-white mt-1">
-                      {card.extra}
-                    </span>
-                  )}
-                </div>
-              ))}
+              {isFetching
+                ? Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton
+                      key={i}
+                      className="flex-1 h-24 rounded-2xl bg-white/20"
+                    />
+                  ))
+                : cardsRow.map((card, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start"
+                    >
+                      <span className="text-sm text-white">{card.label}</span>
+                      <span className="text-xl font-bold text-white">
+                        {card.value}
+                      </span>
+                      <LinearProgress
+                        variant="determinate"
+                        value={card.progress}
+                        sx={{
+                          width: "100%",
+                          height: 8,
+                          borderRadius: 8,
+                          backgroundColor: "#e5e7eb",
+                          "& .MuiLinearProgress-bar": {
+                            backgroundColor: "#38bdf8",
+                          },
+                          marginTop: "0.5rem",
+                        }}
+                      />
+                      {card.extra && (
+                        <span className="text-xs text-white mt-1">
+                          {card.extra}
+                        </span>
+                      )}
+                    </div>
+                  ))}
             </div>
 
             {/* Cards grandes */}
             <div className="w-full max-w-md mx-auto px-4 mt-4 flex flex-col gap-4">
-              {bigCards.map((card, idx) => (
-                <div
-                  key={idx}
-                  className="bg-black/20 rounded-2xl shadow p-6 flex flex-col items-start"
-                >
-                  <span className="text-lg font-semibold text-white">
-                    {card.title}
-                  </span>
-                  <span className="text-3xl font-bold text-white mt-2">
-                    {card.value}
-                  </span>
-                  <span className="text-sm text-white mt-2">
-                    {card.description}
-                  </span>
-                </div>
-              ))}
+              {isFetching
+                ? Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-24 rounded-2xl bg-white/20" />
+                  ))
+                : bigCards.map((card, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-black/20 rounded-2xl shadow p-6 flex flex-col items-start"
+                    >
+                      <span className="text-lg font-semibold text-white">
+                        {card.title}
+                      </span>
+                      <span className="text-3xl font-bold text-white mt-2">
+                        {card.value}
+                      </span>
+                      <span className="text-sm text-white mt-2">
+                        {card.description}
+                      </span>
+                    </div>
+                  ))}
             </div>
           </div>
         </div>
