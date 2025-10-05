@@ -1,56 +1,22 @@
 // App.tsx
-import CloudIcon from "@mui/icons-material/Cloud";
-import NightsStayIcon from "@mui/icons-material/NightsStay";
 import RoomIcon from "@mui/icons-material/Room";
-import WbSunnyIcon from "@mui/icons-material/WbSunny";
+import LinearProgress from "@mui/material/LinearProgress";
 import "maplibre-gl/dist/maplibre-gl.css";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Map, { Marker, type MapLayerMouseEvent } from "react-map-gl/maplibre";
+import type { ApiResponse } from "./App";
 import "./App.css";
 import Sidebar from "./components/drawer";
 import { Input } from "./components/ui/input";
-import LinearProgress from "@mui/material/LinearProgress";
 
 const API_URL =
   "https://weather-api-1063811848516.southamerica-east1.run.app/api/prediction";
 
 // ---------- Tipos ----------
-type ApiResponse = {
-  local: {
-    bounding_box?: { lat: number; long: number };
-    data_referencia?: string; // ISO
-  };
-  clima: {
-    temperatura_ar?: { valor: number; unidade: string }; // K
-    precipitacao?: { valor: number; unidade: string }; // kg m-2 s-1
-    vento?: { valor: number; unidade: string }; // m/s
-    radiacao_solar?: { valor: number; unidade: string }; // W m-2
-    ["umidade do ar"]?: { valor: number; unidade: string };
-    ["umidade do solo"]?: { valor: number; unidade: string };
-  };
-  resumo?: string;
-};
 
-// ---------- Helpers ----------
-function kToC(k?: number) {
-  if (k == null) return undefined;
-  return k - 273.15;
-}
-function msToKmh(ms?: number) {
-  if (ms == null) return undefined;
-  return ms * 3.6;
-}
-// 1 kg·m^-2 ≈ 1 mm; por segundo → ×3600 para mm/h
-function kgm2s1ToMmPerHour(val?: number) {
-  if (val == null) return undefined;
-  return val * 3600;
-}
 function fmt(n?: number, digits = 0) {
   if (n == null || Number.isNaN(n)) return "—";
   return n.toFixed(digits);
-}
-function log(...args: any[]) {
-  console.log("[prediction]", ...args);
 }
 
 function App() {
@@ -73,17 +39,16 @@ function App() {
   const [summary, setSummary] = useState<string | null>(null);
   const [locationLabel, setLocationLabel] = useState<string>("Pirituba");
 
+  // Ajuste para os novos campos da API
   const [tempC, setTempC] = useState<number | undefined>(undefined);
   const [precipMmH, setPrecipMmH] = useState<number | undefined>(undefined);
+  const [precipProb, setPrecipProb] = useState<number | undefined>(undefined);
+  const [neveMmH, setNeveMmH] = useState<number | undefined>(undefined);
+  const [neveProb, setNeveProb] = useState<number | undefined>(undefined);
   const [windKmh, setWindKmh] = useState<number | undefined>(undefined);
   const [radWm2, setRadWm2] = useState<number | undefined>(undefined);
-  const [rhPct, setRhPct] = useState<number | undefined>(undefined);
-  const [soilVal, setSoilVal] = useState<number | undefined>(undefined);
-
-  const item = useMemo(() => {
-    if (!clickedItem) return null;
-    return clickedItem.lngLat || null;
-  }, [clickedItem]);
+  const [rhGkg, setRhGkg] = useState<number | undefined>(undefined);
+  const [soilKgM2, setSoilKgM2] = useState<number | undefined>(undefined);
 
   const API_KEY_GEOAPP = "6744060a5fd549059bd59a466bae65b6";
 
@@ -116,12 +81,11 @@ function App() {
   // Chama a API pública
   async function fetchPrediction(lat: number, long: number, dateISO?: string) {
     setIsFetching(true);
-    log("→ fetchPrediction called", { lat, long, dateISO });
 
     const payload = {
       lat,
       long,
-      lon: long, // compatibilidade
+      lon: long,
       date: dateISO ?? new Date().toISOString(),
     };
 
@@ -132,35 +96,21 @@ function App() {
         body: JSON.stringify(payload),
       });
 
-      log("← HTTP status", res.status);
-
-      if (!res.ok) {
-        const text = await res.text().catch(() => "(sem body)");
-        log("✖ erro HTTP", { status: res.status, text });
-        throw new Error(`HTTP ${res.status}: ${text}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data: ApiResponse = await res.json();
-      log("✓ resposta JSON", data);
 
-      const tC = kToC(data?.clima?.temperatura_ar?.valor);
-      const vKmh = msToKmh(data?.clima?.vento?.valor);
-      const pMmH = kgm2s1ToMmPerHour(data?.clima?.precipitacao?.valor);
-
-      setTempC(tC);
-      setWindKmh(vKmh);
-      setPrecipMmH(pMmH);
+      setTempC(data?.clima?.temperatura_ar?.valor);
+      setPrecipMmH(data?.clima?.precipitacao?.valor);
+      setPrecipProb(data?.clima?.precipitacao?.probabilidade);
+      setNeveMmH(data?.clima?.neve?.valor);
+      setNeveProb(data?.clima?.neve?.probabilidade);
+      setWindKmh(
+        data?.clima?.vento?.valor ? data.clima.vento.valor * 3.6 : undefined
+      ); // m/s → km/h
       setRadWm2(data?.clima?.radiacao_solar?.valor);
-
-      const rawUmid = data?.clima?.["umidade do ar"]?.valor;
-      let rh: number | undefined;
-      if (typeof rawUmid === "number") {
-        rh = rawUmid <= 1 ? rawUmid * 100 : rawUmid <= 100 ? rawUmid : undefined;
-      }
-      setRhPct(rh);
-
-      const rawSoil = data?.clima?.["umidade do solo"]?.valor;
-      setSoilVal(typeof rawSoil === "number" ? rawSoil : undefined);
+      setRhGkg(data?.clima?.umidade_do_ar?.valor);
+      setSoilKgM2(data?.clima?.umidade_do_solo?.valor);
 
       setSummary(data?.resumo ?? null);
       setLastUpdated(
@@ -169,18 +119,15 @@ function App() {
           : new Date().toLocaleString()
       );
     } catch (err: any) {
-      const msg = String(err?.message || err);
-      if (msg.includes("Failed to fetch") || msg.includes("TypeError")) {
-        log("⚠ possivel CORS/preflight bloqueado pelo navegador");
-      }
-      console.error(err);
-
       setTempC(undefined);
-      setWindKmh(undefined);
       setPrecipMmH(undefined);
+      setPrecipProb(undefined);
+      setNeveMmH(undefined);
+      setNeveProb(undefined);
+      setWindKmh(undefined);
       setRadWm2(undefined);
-      setRhPct(undefined);
-      setSoilVal(undefined);
+      setRhGkg(undefined);
+      setSoilKgM2(undefined);
       setSummary("Não foi possível obter a previsão no momento.");
     } finally {
       setIsFetching(false);
@@ -199,70 +146,85 @@ function App() {
 
   // Valores para UI
   const temperatura =
-    tempC != null ? `${fmt(tempC, 0)}°C` : isFetching ? "..." : "—";
-  const condicao = summary ?? (isFetching ? "Buscando previsão..." : "Sem resumo");
+    tempC != null ? `${fmt(tempC, 1)}°C` : isFetching ? "..." : "—";
+  const condicao =
+    summary ?? (isFetching ? "Buscando previsão..." : "Sem resumo");
   const tempMax = tempC != null ? `${fmt(tempC + 2, 0)}º` : "—";
   const tempMin = tempC != null ? `${fmt(tempC - 3, 0)}º` : "—";
-  const sensacao = tempC != null ? `Sensação térmica de ${fmt(tempC, 0)}º` : "—";
+  const sensacao =
+    tempC != null ? `Sensação térmica de ${fmt(tempC, 1)}º` : "—";
 
-  // Placeholders (seu endpoint não retorna hora-a-hora)
-  const hourlyForecast = [
-    { hour: "09:00", temp: temperatura, type: "cloud" },
-    { hour: "12:00", temp: temperatura, type: "sun" },
-    { hour: "15:00", temp: temperatura, type: "cloud" },
-  ];
-
-  const probChuva = precipMmH != null ? Math.min(100, Math.round(precipMmH * 10)) : 0;
-  const gridForecast = [
-    { hour: "15:00", percent: `${probChuva}%`, cloud: true, moon: false, temp: temperatura },
-    { hour: "16:00", percent: `${Math.max(0, probChuva - 5)}%`, cloud: false, moon: true, temp: temperatura },
-    { hour: "17:00", percent: `${Math.max(0, probChuva - 10)}%`, cloud: true, moon: true, temp: temperatura },
-  ];
-
-  const iqar = 72; // placeholder
+  // Cards pequenos (sem duplicidade)
   const cardsRow = [
     {
       label: "Vento",
-      value: windKmh != null ? `${fmt(windKmh, 0)} km/h` : "—",
-      progress: Math.min(100, Math.round((windKmh ?? 0) * 4)),
+      value: windKmh != null ? `${fmt(windKmh, 1)} km/h` : "—",
+      progress: windKmh != null ? Math.min(100, Math.round(windKmh * 4)) : 0,
       extra: "",
     },
     {
-      label: "Umidade",
-      value: rhPct != null ? `${fmt(rhPct, 0)}%` : "—",
-      progress: rhPct != null ? Math.round(rhPct) : 0,
+      label: "Umidade do ar",
+      value: rhGkg != null ? `${fmt(rhGkg, 1)} g/kg` : "—",
+      progress: rhGkg != null ? Math.min(100, Math.round(rhGkg * 5)) : 0,
       extra: "",
     },
     {
       label: "Radiação",
       value: radWm2 != null ? `${fmt(radWm2, 0)} W/m²` : "—",
-      progress: Math.min(100, Math.round(((radWm2 ?? 0) / 1000) * 100)),
+      progress:
+        radWm2 != null ? Math.min(100, Math.round((radWm2 / 1000) * 100)) : 0,
       extra: "",
     },
   ];
 
+  // Cards grandes
   const bigCards = [
     {
-      title: "Índice de Calor",
-      value: tempC != null ? `${fmt(tempC, 0)}°C` : "—",
+      title: "Precipitação",
+      value: precipMmH != null ? `${fmt(precipMmH, 2)} mm/h` : "—",
       description:
-        rhPct != null
-          ? "Sensação térmica estimada considerando a umidade."
-          : "Aguardando dados de umidade para sensação térmica.",
+        precipProb != null
+          ? `Probabilidade: ${fmt(precipProb * 100, 0)}%`
+          : "Sem dados de probabilidade.",
     },
     {
-      title: "Ponto de Orvalho",
-      value:
-        tempC != null && rhPct != null
-          ? `${fmt(tempC - (100 - rhPct) / 5, 0)}°C`
-          : "—",
-      description: "Estimativa aproximada com base em T e UR.",
+      title: "Neve",
+      value: neveMmH != null ? `${fmt(neveMmH, 2)} mm/h` : "—",
+      description:
+        neveProb != null
+          ? `Probabilidade: ${fmt(neveProb * 100, 0)}%`
+          : "Sem dados de probabilidade.",
+    },
+    {
+      title: "Umidade do solo",
+      value: soilKgM2 != null ? `${fmt(soilKgM2, 1)} kg/m²` : "—",
+      description: "Estimativa de água disponível no solo.",
     },
   ];
 
-  // Chamada inicial (opcional para já popular a tela)
+  // Detecta localização do usuário ao carregar e faz fetchPrediction
   useEffect(() => {
-    fetchPrediction(viewState.latitude, viewState.longitude);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setViewState((vs) => ({
+            ...vs,
+            latitude,
+            longitude,
+            zoom: 12,
+          }));
+          setLocationLabel(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+          fetchPrediction(latitude, longitude);
+        },
+        () => {
+          fetchPrediction(viewState.latitude, viewState.longitude);
+        }
+      );
+    } else {
+      fetchPrediction(viewState.latitude, viewState.longitude);
+    }
+    // Não inclua fetchPrediction ou viewState no array de dependências!
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -270,12 +232,20 @@ function App() {
     <>
       <Sidebar item={clickedItem as any} open={open} setOpen={setOpen} />
 
-      <div className="fixed top-4 z-30 flex flex-col items-start gap-2 max-h-[calc(100vh)] overflow-y-auto w-full">
-        {!expanded && (
+      {/* Fundo escuro translúcido */}
+      <div
+        className="fixed inset-0 bg-black"
+        style={{ opacity: 0.2, zIndex: 1 }}
+      />
+
+      {!expanded && (
+        <div className="fixed top-4 z-30 flex flex-col items-start gap-2 max-h-[calc(100vh)] overflow-y-auto w-full">
           <div className="text-2xl font-semibold text-white w-full">
             <div className="flex items-center gap-2 px-4 py-2 rounded-full ">
               <RoomIcon className="text-white" />
-              <span className="text-sm font-medium text-white">{locationLabel}</span>
+              <span className="text-sm font-medium text-white">
+                {locationLabel}
+              </span>
               {lastUpdated && (
                 <span className="text-xs text-white/80 ml-2">
                   {isFetching ? "Atualizando..." : `Ref: ${lastUpdated}`}
@@ -387,8 +357,8 @@ function App() {
               ))}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {expanded && (
         <div className="w-screen flex items-center justify-start px-6 py-4 bg-gray-100/95 absolute top-0 left-0 z-20">
@@ -459,7 +429,9 @@ function App() {
               longitude: lngLat.lng,
               latitude: lngLat.lat,
             }));
-            setLocationLabel(`${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`);
+            setLocationLabel(
+              `${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`
+            );
             fetchPrediction(lngLat.lat, lngLat.lng);
           }}
           style={{
@@ -478,7 +450,9 @@ function App() {
         </Map>
         {!expanded && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-xl">
-            <span className="text-white font-semibold">Clique para expandir</span>
+            <span className="text-white font-semibold">
+              Clique para expandir
+            </span>
           </div>
         )}
       </div>
