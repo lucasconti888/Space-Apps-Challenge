@@ -1,9 +1,10 @@
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+
+import { User } from '../domain/User';
 import { db } from '../infrastructure/db';
 import { env } from '../infrastructure/env';
 import { logger } from '../infrastructure/logger';
-import { User } from '../domain/User';
 
 type UserRow = {
   id: string;
@@ -21,19 +22,12 @@ function mapRowToUser(row: UserRow): User {
     password: row.password,
     verified: row.verified,
     verificationCode: row.verification_code,
-    verificationExpires: row.verification_expires
-      ? new Date(row.verification_expires)
-      : null,
+    verificationExpires: row.verification_expires ? new Date(row.verification_expires) : null,
   };
 }
 
 export class UserService {
-  async createUser(
-    email: string,
-    password: string,
-    code: string,
-    expires: Date,
-  ): Promise<User> {
+  async createUser(email: string, password: string, code: string, expires: Date): Promise<User> {
     logger.info('UserService.createUser:start', { email });
 
     const hash = await bcrypt.hash(password, env.bcryptSalt);
@@ -61,10 +55,7 @@ export class UserService {
   async findByEmail(email: string): Promise<User | null> {
     logger.debug('UserService.findByEmail', { email });
 
-    const result = await db.query<UserRow>(
-      'SELECT * FROM users WHERE email = $1 LIMIT 1',
-      [email],
-    );
+    const result = await db.query<UserRow>('SELECT * FROM users WHERE email = $1 LIMIT 1', [email]);
 
     if (result.rowCount === 0) return null;
     return mapRowToUser(result.rows[0]);

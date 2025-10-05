@@ -1,6 +1,7 @@
 import http from 'http';
-import { env } from './env';
+
 import app from './app';
+import { env } from './env';
 import { logger } from './logger';
 
 function startServer() {
