@@ -67,3 +67,44 @@ html, body, #root {
 .read-the-docs {
   color: #888;
 }
+
+/* Adicione logo após o <Sidebar ... /> e antes do conteúdo principal */
+.fixed {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+/* Conteúdo principal (z-30 ou superior para ficar acima do fundo) */
+.z-30 {
+  z-index: 30;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-start {
+  align-items: flex-start;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.max-h-[calc(100vh)] {
+  max-height: calc(100vh);
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
+
+.w-full {
+  width: 100%;
+}
