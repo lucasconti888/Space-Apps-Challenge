@@ -132,7 +132,6 @@ export const useApp = () => {
     fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
   }, [viewToPredict.latitude, viewToPredict.longitude]);
 
-  // Atualiza o background quando os dados mudam
   useEffect(() => {
     setBgUrl(getBgFromApi(apiData));
   }, [apiData]);
@@ -150,7 +149,6 @@ export const useApp = () => {
     setViewState((vs) => ({ ...vs, latitude: lat, longitude: lng }));
   }
 
-  // Quando clica em "Ver dados atuais do local" no drawer
   function handleGoToUserLocation() {
     if (userLocation) {
       setViewState((vs) => ({
@@ -221,6 +219,13 @@ export const useApp = () => {
       setHasLeftUserLoc(false);
     }
   }, [viewState.latitude, viewState.longitude, userLocation]);
+
+  useEffect(() => {
+    if (viewToPredict) {
+      fetchLocationName(viewToPredict.latitude, viewToPredict.longitude);
+      fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
+    }
+  }, [viewToPredict]);
 
   return {
     clickedItem,
