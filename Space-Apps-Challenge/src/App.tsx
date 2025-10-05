@@ -22,22 +22,22 @@ function App() {
     locationLoading,
     open,
     search,
-    userLocation,
-    results,
-    loading,
-    showDropdown,
-    summary,
-    viewState,
-    apiData,
     setClickedItem,
     setOpen,
-    fetchPrediction,
     setShowDropdown,
     handleSelect,
     setViewState,
     setExpanded,
-    setClickedMarkers,handleInputChange,
-    setLocationLabel,
+    setClickedMarkers,
+    handleInputChange,
+    setViewToPredict,
+    userLocation,
+    viewState,
+    results,
+    loading,
+    showDropdown,
+    summary,
+    apiData,
   } = useApp();
 
   const { bigCards, cardsRow, sensacao, tempMax, tempMin, temperatura } =
@@ -61,6 +61,12 @@ function App() {
           open={open}
           setOpen={setOpen}
           onGoToData={() => {
+            if (userLocation) {
+              setViewToPredict({
+                latitude: viewState.latitude,
+                longitude: viewState.longitude,
+              });
+            }
             setOpen(false);
             setExpanded(false);
           }}
@@ -318,10 +324,6 @@ function App() {
                 longitude: lngLat.lng,
                 latitude: lngLat.lat,
               }));
-              setLocationLabel(
-                `${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`
-              );
-              fetchPrediction(lngLat.lat, lngLat.lng);
             }}
             style={{
               width: "100%",

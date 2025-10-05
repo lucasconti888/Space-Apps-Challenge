@@ -162,7 +162,6 @@ export default function Sidebar({ item, open, setOpen, onGoToData }: SidebarProp
                 letterSpacing: 1,
               }}
               onClick={() => {
-                setOpen(false);
                 if (onGoToData) onGoToData();
               }}
             >

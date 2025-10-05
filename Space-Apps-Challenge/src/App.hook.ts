@@ -130,12 +130,10 @@ export const useApp = () => {
     setBgUrl(getBgFromApi(apiData));
   }, [apiData]);
 
-  // handleSelect, handleMapClick, handleGoToUserLocation devem SEMPRE alterar viewToPredict
   function handleSelect(place: any) {
     const longitude = place.geometry.coordinates[0];
     const latitude = place.geometry.coordinates[1];
     setViewState((vs) => ({ ...vs, longitude, latitude, zoom: 14 }));
-    setViewToPredict({ latitude, longitude });
     setSearch(place.properties.formatted);
     setLocationLabel(place.properties.formatted);
     setShowDropdown(false);
@@ -143,9 +141,9 @@ export const useApp = () => {
 
   function handleMapClick(lat: number, lng: number) {
     setViewState((vs) => ({ ...vs, latitude: lat, longitude: lng }));
-    setViewToPredict({ latitude: lat, longitude: lng });
   }
 
+  // Quando clica em "Ver dados atuais do local" no drawer
   function handleGoToUserLocation() {
     if (userLocation) {
       setViewState((vs) => ({
