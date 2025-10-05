@@ -251,9 +251,7 @@ function App() {
                     style={{ border: "2px solid #e5e7eb" }}
                     onClick={() => setExpanded(true)}
                   >
-                    {isFetching ? (
-                      <Skeleton className="w-full h-full rounded-xl bg-white/20" />
-                    ) : (
+                    
                       <Map
                         initialViewState={{
                           longitude: viewState.longitude,
@@ -275,7 +273,6 @@ function App() {
                           color="#61dbfb"
                         />
                       </Map>
-                    )}
                     <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                       <span className="text-white font-semibold text-sm">
                         Clique para expandir
