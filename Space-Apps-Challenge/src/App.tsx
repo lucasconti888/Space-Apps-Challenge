@@ -305,11 +305,6 @@ function App() {
           onClick={() => !expanded && setExpanded(true)}
         >
           <Map
-            initialViewState={{
-              longitude: -122.4,
-              latitude: 37.8,
-              zoom: 14,
-            }}
             {...viewState}
             onZoom={(evt) => setViewState(evt.viewState)}
             onDrag={(evt) => setViewState(evt.viewState)}
@@ -341,21 +336,61 @@ function App() {
               <Marker
               longitude={userLocation.lng}
               latitude={userLocation.lat}
-              color="#2563eb"
+              anchor="center"
               >
               <div
                 style={{
-                background: "rgba(37,99,235,0.9)",
-                color: "#fff",
-                padding: "8px 16px",
-                borderRadius: "12px",
-                fontWeight: 600,
-                fontSize: "1.1rem",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                whiteSpace: "nowrap",
+                position: "relative",
+                width: 40,
+                height: 40,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 }}
               >
-                Você está aqui
+                {/* Outer pulsing circle */}
+                <span
+                style={{
+                  position: "absolute",
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: "rgba(37,99,235,0.25)",
+                  animation: "pulse 1.5s infinite",
+                  zIndex: 1,
+                }}
+                />
+                {/* Inner solid circle */}
+                <span
+                style={{
+                  position: "absolute",
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  background: "rgba(37,99,235,1)",
+                  border: "2px solid #fff",
+                  zIndex: 2,
+                  boxShadow: "0 2px 8px 0 rgba(37,99,235,0.25)",
+                }}
+                />
+                <style>
+                {`
+                  @keyframes pulse {
+                  0% {
+                    transform: scale(0.8);
+                    opacity: 0.7;
+                  }
+                  70% {
+                    transform: scale(1.3);
+                    opacity: 0.2;
+                  }
+                  100% {
+                    transform: scale(0.8);
+                    opacity: 0.7;
+                  }
+                  }
+                `}
+                </style>
               </div>
               </Marker>
             )}
