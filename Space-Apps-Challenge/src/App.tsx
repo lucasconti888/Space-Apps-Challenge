@@ -24,13 +24,14 @@ function App() {
     setClickedItem,
     setOpen,
     setShowDropdown,
-    handleSelect,
+    handleSelect,fetchLocationName,
     setViewState,
     setExpanded,
     setClickedMarkers,
     handleInputChange,
     setViewToPredict,
     setUnderstood,
+    fetchPrediction,
     handleRecenter,
     setShowTutorial,
     showTutorial,
@@ -53,6 +54,12 @@ function App() {
         item={clickedItem as any}
         open={open}
         setOpen={setOpen}
+        setValues={(data: string) => {
+          fetchLocationName(viewState.latitude, viewState.longitude);
+          fetchPrediction(viewState.latitude, viewState.longitude, data);
+          setOpen(false);
+          setExpanded(false);
+        }}
         onGoToData={() => {
           if (viewState) {
             setViewToPredict({

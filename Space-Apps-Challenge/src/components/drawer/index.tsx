@@ -1,14 +1,13 @@
-import * as React from "react";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import Typography from "@mui/material/Typography";
-import { Drawer, DrawerContent } from "../ui/drawer";
+import { ChevronDownIcon } from "lucide-react";
+import * as React from "react";
 import { Button } from "../ui/button";
 import { Calendar } from "../ui/calendar";
-import { Input } from "../ui/input";
+import { Drawer, DrawerContent } from "../ui/drawer";
 import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { ChevronDownIcon } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
 
 interface SidebarProps {
@@ -18,15 +17,21 @@ interface SidebarProps {
   } | null;
   open: boolean;
   setOpen: (open: boolean) => void;
+  setValues: (data: string) => void;
   onGoToData?: () => void;
 }
 
-export default function Sidebar({ item, open, setOpen, onGoToData }: SidebarProps) {
+export default function Sidebar({
+  item,
+  open,
+  setOpen,
+  onGoToData,
+  setValues,
+}: SidebarProps) {
   const [address, setAddress] = React.useState<string>("");
   const [addressLoading, setAddressLoading] = React.useState(false);
   const [date, setDate] = React.useState<Date | undefined>(undefined);
   const [openCalendar, setOpenCalendar] = React.useState(false);
-  const [useCurrent, setUseCurrent] = React.useState(true);
   const [loading, setLoading] = React.useState(false);
 
   // Busca endereço quando lat/lng mudam
@@ -58,14 +63,13 @@ export default function Sidebar({ item, open, setOpen, onGoToData }: SidebarProp
   }, [item]);
 
   function handleBuscar() {
+    if (!onGoToData) return;
     setLoading(true);
-    // Chame aqui sua função de busca de previsão com a data
-    setTimeout(() => setLoading(false), 1000); // simulação
+    setValues(date ? date.toISOString() : new Date().toISOString());
   }
 
   function handleLimpar() {
     setDate(undefined);
-    setUseCurrent(true);
     // Chame aqui sua função de limpar filtros
   }
 
@@ -106,20 +110,20 @@ export default function Sidebar({ item, open, setOpen, onGoToData }: SidebarProp
                       id="date-picker"
                       className="w-32 justify-between font-normal"
                     >
-                      {date
-                        ? date.toLocaleDateString()
-                        : "Selecionar data"}
+                      {date ? date.toLocaleDateString() : "Selecionar data"}
                       <ChevronDownIcon />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                  <PopoverContent
+                    className="w-auto overflow-hidden p-0"
+                    align="start"
+                  >
                     <Calendar
                       mode="single"
                       selected={date}
                       captionLayout="dropdown"
                       onSelect={(date) => {
                         setDate(date);
-                        setUseCurrent(false);
                         setOpenCalendar(false);
                       }}
                     />
@@ -134,7 +138,7 @@ export default function Sidebar({ item, open, setOpen, onGoToData }: SidebarProp
                 variant="secondary"
                 className="flex-1"
                 onClick={handleBuscar}
-                disabled={loading}
+                disabled={loading || !date}
               >
                 Buscar previsão filtrada
               </Button>
@@ -145,8 +149,7 @@ export default function Sidebar({ item, open, setOpen, onGoToData }: SidebarProp
               variant="default"
               className="w-full font-semibold text-lg py-4 shadow-lg border-2 border-blue-400"
               style={{
-                background:
-                  "linear-gradient(90deg, #38bdf8 0%, #2563eb 100%)",
+                background: "linear-gradient(90deg, #38bdf8 0%, #2563eb 100%)",
                 color: "#fff",
                 marginTop: 12,
                 letterSpacing: 1,
@@ -180,5 +183,3 @@ export default function Sidebar({ item, open, setOpen, onGoToData }: SidebarProp
     </Drawer>
   );
 }
-
-

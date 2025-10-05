@@ -252,6 +252,7 @@ export const useApp = () => {
     setClickedItem,
     setOpen,
     fetchPrediction,
+    fetchLocationName,
     setShowDropdown,
     handleSelect,
     setShowTutorial,
