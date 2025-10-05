@@ -20,12 +20,40 @@ function fmt(n?: number, digits = 0) {
   return n.toFixed(digits);
 }
 
+const BG_IMAGES: Record<string, string> = {
+  default:
+    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1280&q=80",
+  chuva:
+    "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=1280&q=80",
+  sol:
+    "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&w=1280&q=80",
+  neve:
+    "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=1280&q=80",
+  nublado:
+    "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1280&q=80",
+  noite:
+    "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1280&q=80",
+};
+
+function getBgFromApi(apiData?: ApiResponse): string {
+  if (!apiData) return BG_IMAGES.default;
+  const resumo = apiData.resumo?.toLowerCase() || "";
+  if (resumo.includes("chuva")) return BG_IMAGES.chuva;
+  if (resumo.includes("neve")) return BG_IMAGES.neve;
+  if (resumo.includes("sol") || resumo.includes("ensolarado"))
+    return BG_IMAGES.sol;
+  if (resumo.includes("nublado") || resumo.includes("nuvem"))
+    return BG_IMAGES.nublado;
+  if (resumo.includes("noite")) return BG_IMAGES.noite;
+  return BG_IMAGES.default;
+}
+
 function App() {
   const [clickedItem, setClickedItem] = useState<MapLayerMouseEvent>();
   const [viewState, setViewState] = useState({
-    longitude: -100,
-    latitude: 40,
-    zoom: 3.5,
+    latitude: -23.5,
+    longitude: -46.6,
+    zoom: 12,
   });
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -35,10 +63,13 @@ function App() {
   const [expanded, setExpanded] = useState(false);
 
   // Estados para previsão
-  const [isFetching, setIsFetching] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
-  const [locationLabel, setLocationLabel] = useState<string>("Pirituba");
+  const [locationLabel, setLocationLabel] = useState<string>(
+    "Detectando localização..."
+  );
+  const [locationLoading, setLocationLoading] = useState(true);
 
   // Ajuste para os novos campos da API
   const [tempC, setTempC] = useState<number | undefined>(undefined);
@@ -201,7 +232,7 @@ function App() {
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
+        async (pos) => {
           const { latitude, longitude } = pos.coords;
           setViewState((vs) => ({
             ...vs,
@@ -209,302 +240,389 @@ function App() {
             longitude,
             zoom: 12,
           }));
-          setLocationLabel(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
-          fetchPrediction(latitude, longitude);
+          try {
+            setLocationLoading(true);
+            // Simula delay para Skeleton ser visível
+            await new Promise((res) => setTimeout(res, 600));
+            const res = await fetch(
+              `https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=6744060a5fd549059bd59a466bae65b6`
+            );
+            const data = await res.json();
+            if (data.features && data.features[0]) {
+              setLocationLabel(data.features[0].properties.formatted);
+            } else {
+              setLocationLabel(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+            }
+          } catch {
+            setLocationLabel(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+          } finally {
+            setLocationLoading(false);
+          }
         },
         () => {
-          fetchPrediction(viewState.latitude, viewState.longitude);
+          setLocationLabel("Localização não permitida");
+          setLocationLoading(false);
         }
       );
     } else {
-      fetchPrediction(viewState.latitude, viewState.longitude);
+      setLocationLabel("Localização não suportada");
+      setLocationLoading(false);
+    }
+  }, []);
+
+  // Sempre que mudar a localização manualmente, busca o nome do local
+  useEffect(() => {
+    async function fetchLocationName(lat: number, lng: number) {
+      setLocationLoading(true);
+      try {
+        const res = await fetch(
+          `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=6744060a5fd549059bd59a466bae65b6`
+        );
+        const data = await res.json();
+        if (data.features && data.features[0]) {
+          setLocationLabel(data.features[0].properties.formatted);
+        } else {
+          setLocationLabel(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+        }
+      } catch {
+        setLocationLabel(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+      } finally {
+        setLocationLoading(false);
+      }
+    }
+    // Só busca se não for a primeira vez (evita duplo fetch ao abrir)
+    if (
+      viewState.latitude !== -23.5 &&
+      viewState.longitude !== -46.6
+    ) {
+      fetchLocationName(viewState.latitude, viewState.longitude);
     }
   }, [viewState.latitude, viewState.longitude]);
 
+  const [apiData, setApiData] = useState<ApiResponse | undefined>(undefined);
+  const [bgUrl, setBgUrl] = useState(BG_IMAGES.default);
+
+  // Quando a resposta da API chegar, atualize o background
+  useEffect(() => {
+    setBgUrl(getBgFromApi(apiData));
+  }, [apiData]);
+
+  // Função para buscar nome do local pela lat/long
+  async function fetchLocationName(lat: number, lng: number) {
+    try {
+      const res = await fetch(
+        `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=6744060a5fd549059bd59a466bae65b6`
+      );
+      const data = await res.json();
+      if (data.features && data.features[0]) {
+        setLocationLabel(data.features[0].properties.formatted);
+      } else {
+        setLocationLabel(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+      }
+    } catch {
+      setLocationLabel(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+    }
+  }
+
+  // Sempre que mudar a localização, busca o nome
+  useEffect(() => {
+    fetchLocationName(viewState.latitude, viewState.longitude);
+  }, [viewState.latitude, viewState.longitude]);
+
   return (
-    <>
-      <Sidebar
-        item={clickedItem as any}
-        open={open}
-        setOpen={setOpen}
-        onGoToData={() => {
-          setOpen(false);
-          setExpanded(false); // Fecha o mapa expandido ao ir para os dados
-        }}
-      />
+    <div
+      style={{
+        minHeight: "100vh",
+        minWidth: "100vw",
+        backgroundImage: `url('${bgUrl}')`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        transition: "background-image 0.5s",
+      }}
+    >
+      <>
+        <Sidebar
+          item={clickedItem as any}
+          open={open}
+          setOpen={setOpen}
+          onGoToData={() => {
+            setOpen(false);
+            setExpanded(false); // Fecha o mapa expandido ao ir para os dados
+          }}
+        />
 
-      {/* Fundo escuro translúcido */}
-      <div
-        className="fixed inset-0 bg-black"
-        style={{ opacity: 0.2, zIndex: 1 }}
-      />
+        {/* Fundo escuro translúcido */}
+        <div
+          className="fixed inset-0 bg-black"
+          style={{ opacity: 0.2, zIndex: 1 }}
+        />
 
-      {!expanded && (
-        <div className="fixed top-4 z-30 flex flex-col items-start gap-2 max-h-[calc(100vh)] overflow-y-auto w-full">
-          <div className="text-2xl font-semibold text-white w-full">
-            {/* Header: Localização ao lado da temperatura */}
-            <div className="flex items-center gap-3 px-4 py-2 rounded-full ml-6 mt-8">
-              <RoomIcon className="text-white" />
-              <span className="text-lg font-medium text-white">
-                {isFetching ? (
-                  <Skeleton className="w-24 h-5 bg-white/30" />
-                ) : (
-                  locationLabel
+        {!expanded && (
+          <div className="fixed top-4 z-30 flex flex-col items-start gap-2 max-h-[calc(100vh)] overflow-y-auto w-full">
+            <div className="text-2xl font-semibold text-white w-full">
+              {/* Header: Localização ao lado da temperatura */}
+              <div className="flex items-center gap-3 px-4 py-2 rounded-full ml-6 mt-8">
+                <RoomIcon className="text-white" />
+                <span className="text-lg text-left font-medium text-white">
+                  {locationLoading
+                    ? <Skeleton className="w-24 h-5 bg-white/30" />
+                    : locationLabel}
+                </span>
+                {lastUpdated && (
+                  <span className="text-xs text-white/80 ml-2">
+                    {isFetching ? (
+                      <Skeleton className="w-20 h-4 bg-white/30" />
+                    ) : (
+                      `Ref: ${lastUpdated}`
+                    )}
+                  </span>
                 )}
-              </span>
-              {lastUpdated && (
-                <span className="text-xs text-white/80 ml-2">
+              </div>
+
+              {/* Temperatura e resumo */}
+              <div className="flex flex-row items-end ml-6 mt-2">
+                <span className="text-6xl text-white leading-none">
                   {isFetching ? (
-                    <Skeleton className="w-20 h-4 bg-white/30" />
+                    <Skeleton className="w-32 h-12 bg-white/30" />
                   ) : (
-                    `Ref: ${lastUpdated}`
+                    temperatura
                   )}
                 </span>
-              )}
-            </div>
+              </div>
 
-            {/* Temperatura e resumo */}
-            <div className="flex flex-row items-end ml-6 mt-2">
-              <span className="text-6xl text-white leading-none">
+              {/* Resumo da API, estilizado e alinhado à esquerda */}
+              <div className="max-w-md mx-auto mt-4 px-4 text-left">
+                <span className="block text-white text-lg font-normal leading-relaxed">
+                  {isFetching ? (
+                    <Skeleton className="w-full h-6 bg-white/20" />
+                  ) : (
+                    summary
+                  )}
+                </span>
+              </div>
+
+              {/* Máx, Mín, Sensação */}
+              <div className="text-sm text-white/80 mt-4 ml-8">
                 {isFetching ? (
-                  <Skeleton className="w-32 h-12 bg-white/30" />
+                  <Skeleton className="w-48 h-4 bg-white/30" />
                 ) : (
-                  temperatura
+                  <>Máx {tempMax} · Mín {tempMin} · {sensacao}</>
                 )}
-              </span>
-            </div>
+              </div>
 
-            {/* Resumo da API, estilizado e alinhado à esquerda */}
-            <div className="max-w-md mx-auto mt-4 px-4 text-left">
-              <span className="block text-white text-lg font-normal leading-relaxed">
-                {isFetching ? (
-                  <Skeleton className="w-full h-6 bg-white/20" />
-                ) : (
-                  summary
-                )}
-              </span>
-            </div>
-
-            {/* Máx, Mín, Sensação */}
-            <div className="text-sm text-white/80 mt-4 ml-8">
-              {isFetching ? (
-                <Skeleton className="w-48 h-4 bg-white/30" />
-              ) : (
-                <>Máx {tempMax} · Mín {tempMin} · {sensacao}</>
-              )}
-            </div>
-
-            <div className="w-full max-w-md mx-auto px-4 mt-2">
-              <div className="w-full max-w-md mx-auto mt-4">
-                <div className="bg-black/20 rounded-2xl shadow p-4 flex flex-col">
-                  <span className="text-base text-left text-white font-semibold mb-2">
-                    Radar
-                  </span>
-                  <div
-                    className="w-full h-40 rounded-xl overflow-hidden relative cursor-pointer"
-                    style={{ border: "2px solid #e5e7eb" }}
-                    onClick={() => setExpanded(true)}
-                  >
-                    {isFetching ? (
-                      <Skeleton className="w-full h-full rounded-xl bg-white/20" />
-                    ) : (
-                      <Map
-                        initialViewState={{
-                          longitude: viewState.longitude,
-                          latitude: viewState.latitude,
-                          zoom: 7,
-                        }}
-                        {...viewState}
-                        style={{ width: "100%", height: "100%" }}
-                        mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
-                        dragPan={false}
-                        dragRotate={false}
-                        scrollZoom={false}
-                        doubleClickZoom={false}
-                        touchZoomRotate={false}
-                      >
-                        <Marker
-                          longitude={viewState.longitude}
-                          latitude={viewState.latitude}
-                          color="#61dbfb"
-                        />
-                      </Map>
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                      <span className="text-white font-semibold text-sm">
-                        Clique para expandir
-                      </span>
+              <div className="w-full max-w-md mx-auto px-4 mt-2">
+                <div className="w-full max-w-md mx-auto mt-4">
+                  <div className="bg-black/20 rounded-2xl shadow p-4 flex flex-col">
+                    <span className="text-base text-left text-white font-semibold mb-2">
+                      Radar
+                    </span>
+                    <div
+                      className="w-full h-40 rounded-xl overflow-hidden relative cursor-pointer"
+                      style={{ border: "2px solid #e5e7eb" }}
+                      onClick={() => setExpanded(true)}
+                    >
+                      {isFetching ? (
+                        <Skeleton className="w-full h-full rounded-xl bg-white/20" />
+                      ) : (
+                        <Map
+                          initialViewState={{
+                            longitude: viewState.longitude,
+                            latitude: viewState.latitude,
+                            zoom: 7,
+                          }}
+                          {...viewState}
+                          style={{ width: "100%", height: "100%" }}
+                          mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
+                          dragPan={false}
+                          dragRotate={false}
+                          scrollZoom={false}
+                          doubleClickZoom={false}
+                          touchZoomRotate={false}
+                        >
+                          <Marker
+                            longitude={viewState.longitude}
+                            latitude={viewState.latitude}
+                            color="#61dbfb"
+                          />
+                        </Map>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                        <span className="text-white font-semibold text-sm">
+                          Clique para expandir
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Linha única de cards pequenos */}
-            <div className="w-full max-w-md mx-auto px-4 mt-4 flex gap-4">
-              {isFetching
-                ? Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton
-                      key={i}
-                      className="flex-1 h-24 rounded-2xl bg-white/20"
-                    />
-                  ))
-                : cardsRow.map((card, i) => (
-                    <div
-                      key={i}
-                      className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start"
-                    >
-                      <span className="text-sm text-white">{card.label}</span>
-                      <span className="text-xl font-bold text-white">
-                        {card.value}
-                      </span>
-                      <LinearProgress
-                        variant="determinate"
-                        value={card.progress}
-                        sx={{
-                          width: "100%",
-                          height: 8,
-                          borderRadius: 8,
-                          backgroundColor: "#e5e7eb",
-                          "& .MuiLinearProgress-bar": {
-                            backgroundColor: "#38bdf8",
-                          },
-                          marginTop: "0.5rem",
-                        }}
+              {/* Linha única de cards pequenos */}
+              <div className="w-full max-w-md mx-auto px-4 mt-4 flex gap-4">
+                {isFetching
+                  ? Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="flex-1 h-24 rounded-2xl bg-white/20"
                       />
-                      {card.extra && (
-                        <span className="text-xs text-white mt-1">
-                          {card.extra}
+                    ))
+                  : cardsRow.map((card, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start"
+                      >
+                        <span className="text-sm text-white">{card.label}</span>
+                        <span className="text-xl font-bold text-white">
+                          {card.value}
                         </span>
-                      )}
-                    </div>
-                  ))}
-            </div>
-
-            {/* Cards grandes */}
-            <div className="w-full max-w-md mx-auto px-4 mt-4 flex flex-col gap-4">
-              {isFetching
-                ? Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-24 rounded-2xl bg-white/20" />
-                  ))
-                : bigCards.map((card, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-black/20 rounded-2xl shadow p-6 flex flex-col items-start"
-                    >
-                      <span className="text-lg font-semibold text-white">
-                        {card.title}
-                      </span>
-                      <span className="text-3xl font-bold text-white mt-2">
-                        {card.value}
-                      </span>
-                      <span className="text-sm text-white mt-2">
-                        {card.description}
-                      </span>
-                    </div>
-                  ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {expanded && (
-        <div className="w-screen flex items-center justify-start px-6 py-4 bg-gray-100/95 absolute top-0 left-0 z-20">
-          <div className="relative flex-1 w-full max-w-xl">
-            <Input
-              type="search"
-              value={search}
-              onChange={handleInputChange}
-              placeholder="Digite para pesquisar..."
-              className="w-full"
-              onFocus={() => search.length >= 3 && setShowDropdown(true)}
-              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-            />
-            {showDropdown && (
-              <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-auto z-30">
-                {loading && (
-                  <div className="px-2 py-1 text-sm text-gray-600">
-                    Carregando...
-                  </div>
-                )}
-                {results.length === 0 && !loading && search.length >= 3 && (
-                  <div className="px-2 py-1 text-sm text-gray-600">
-                    Nenhum resultado
-                  </div>
-                )}
-                {results.map((item) => (
-                  <button
-                    key={item.properties.place_id}
-                    type="button"
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm text-gray-800"
-                    onMouseDown={() => handleSelect(item)}
-                    style={{ background: "transparent" }}
-                  >
-                    {item.properties.formatted}
-                  </button>
-                ))}
+                        <LinearProgress
+                          variant="determinate"
+                          value={card.progress}
+                          sx={{
+                            width: "100%",
+                            height: 8,
+                            borderRadius: 8,
+                            backgroundColor: "#e5e7eb",
+                            "& .MuiLinearProgress-bar": {
+                              backgroundColor: "#38bdf8",
+                            },
+                            marginTop: "0.5rem",
+                          }}
+                        />
+                        {card.extra && (
+                          <span className="text-xs text-white mt-1">
+                            {card.extra}
+                          </span>
+                        )}
+                      </div>
+                    ))}
               </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      <div
-        className={`fixed bottom-0 left-0 transition-all duration-300 ${
-          expanded
-            ? "w-screen h-screen z-10"
-            : "w-full h-0 max-w-md mx-auto mb-4 rounded-xl shadow-lg z-10 cursor-pointer"
-        } bg-transparent`}
-        style={{ right: 0 }}
-        onClick={() => !expanded && setExpanded(true)}
-      >
-        <Map
-          initialViewState={{
-            longitude: -122.4,
-            latitude: 37.8,
-            zoom: 14,
-          }}
-          {...viewState}
-          onZoom={(evt) => setViewState(evt.viewState)}
-          onDrag={(evt) => setViewState(evt.viewState)}
-          onClick={(e) => {
-            if (!expanded) return;
-            const { lngLat } = e;
-            setClickedItem(e);
-            setOpen(true);
-            setViewState((vs) => ({
-              ...vs,
-              longitude: lngLat.lng,
-              latitude: lngLat.lat,
-            }));
-            setLocationLabel(
-              `${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`
-            );
-            fetchPrediction(lngLat.lat, lngLat.lng);
-          }}
-          style={{
-            width: "100%",
-            height: "100%",
-            borderRadius: expanded ? 0 : "1rem",
-            pointerEvents: expanded ? "auto" : "none",
-          }}
-          mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
+              {/* Cards grandes */}
+              <div className="w-full max-w-md mx-auto px-4 mt-4 flex flex-col gap-4">
+                {isFetching
+                  ? Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-24 rounded-2xl bg-white/20" />
+                    ))
+                  : bigCards.map((card, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-black/20 rounded-2xl shadow p-6 flex flex-col items-start"
+                      >
+                        <span className="text-lg font-semibold text-white">
+                          {card.title}
+                        </span>
+                        <span className="text-3xl font-bold text-white mt-2">
+                          {card.value}
+                        </span>
+                        <span className="text-sm text-white mt-2">
+                          {card.description}
+                        </span>
+                      </div>
+                    ))}
+            </div>
+          </div>
+          </div>
+        )}
+
+        {expanded && (
+          <div className="w-screen flex items-center justify-start px-6 py-4 bg-gray-100/95 absolute top-0 left-0 z-20">
+            <div className="relative flex-1 w-full max-w-xl">
+              <Input
+                type="search"
+                value={search}
+                onChange={handleInputChange}
+                placeholder="Digite para pesquisar..."
+                className="w-full"
+                onFocus={() => search.length >= 3 && setShowDropdown(true)}
+                onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+              />
+              {showDropdown && (
+                <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-auto z-30">
+                  {loading && (
+                    <div className="px-2 py-1 text-sm text-gray-600">
+                      Carregando...
+                    </div>
+                  )}
+                  {results.length === 0 && !loading && search.length >= 3 && (
+                    <div className="px-2 py-1 text-sm text-gray-600">
+                      Nenhum resultado
+                    </div>
+                  )}
+                  {results.map((item) => (
+                    <button
+                      key={item.properties.place_id}
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm text-gray-800"
+                      onMouseDown={() => handleSelect(item)}
+                      style={{ background: "transparent" }}
+                    >
+                      {item.properties.formatted}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div
+          className={`fixed bottom-0 left-0 transition-all duration-300 ${
+            expanded
+              ? "w-screen h-screen z-10"
+              : "w-full h-0 max-w-md mx-auto mb-4 rounded-xl shadow-lg z-10 cursor-pointer"
+          } bg-transparent`}
+          style={{ right: 0 }}
+          onClick={() => !expanded && setExpanded(true)}
         >
-          {/* <Marker
+          <Map
+            initialViewState={{
+              longitude: -122.4,
+              latitude: 37.8,
+              zoom: 14,
+            }}
+            {...viewState}
+            onZoom={(evt) => setViewState(evt.viewState)}
+            onDrag={(evt) => setViewState(evt.viewState)}
+            onClick={(e) => {
+              if (!expanded) return;
+              const { lngLat } = e;
+              setClickedItem(e);
+              setOpen(true);
+              setViewState((vs) => ({
+                ...vs,
+                longitude: lngLat.lng,
+                latitude: lngLat.lat,
+              }));
+              setLocationLabel(
+                `${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`
+              );
+              fetchPrediction(lngLat.lat, lngLat.lng);
+            }}
+            style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: expanded ? 0 : "1rem",
+              pointerEvents: expanded ? "auto" : "none",
+            }}
+            mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
+          >
+            {/* <Marker
             longitude={viewState.longitude}
             latitude={viewState.latitude}
             color="#61dbfb"
           /> */}
-        </Map>
-        {!expanded && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-xl">
-            <span className="text-white font-semibold">
-              Clique para expandir
-            </span>
-          </div>
-        )}
-      </div>
-    </>
+          </Map>
+          {!expanded && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-xl">
+              <span className="text-white font-semibold">
+                Clique para expandir
+              </span>
+            </div>
+          )}
+        </div>
+      </>
+    </div>
   );
 }
 
