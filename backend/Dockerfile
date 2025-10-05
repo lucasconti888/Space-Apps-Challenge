@@ -1,12 +1,18 @@
-FROM node:20
+FROM node:20 AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
 
+FROM node:20-alpine
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/dist ./dist
+RUN npm ci --omit=dev
 
-COPY . .
-
+ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+CMD ["node", "dist/infrastructure/server.js"]

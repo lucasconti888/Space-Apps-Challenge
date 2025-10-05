@@ -1,15 +1,15 @@
-import { Request, Response, NextFunction, Router } from 'express';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { RegisterUserDto } from '../dto/RegisterUserDto';
-import { VerifyUserDto } from '../dto/VerifyUserDto';
-import { LoginUserDto } from '../dto/LoginUserDto';
-import { ResendVerificationDto } from '../dto/ResendVerificationDto';
-import { logger } from '../infrastructure/logger';
+import { NextFunction, Request, Response, Router } from 'express';
 
 import { AuthService } from '../application/AuthService';
 import { UserService } from '../application/UserService';
+import { LoginUserDto } from '../dto/LoginUserDto';
+import { RegisterUserDto } from '../dto/RegisterUserDto';
+import { ResendVerificationDto } from '../dto/ResendVerificationDto';
+import { VerifyUserDto } from '../dto/VerifyUserDto';
 import { env } from '../infrastructure/env';
+import { logger } from '../infrastructure/logger';
 import { sendVerificationEmail } from './Mailer';
 
 const router = Router();
@@ -104,7 +104,9 @@ router.post('/resend-verification', async (req: Request, res: Response, next: Ne
     }
     const codeLength = env.verification.codeLength || 6;
     const expiryMinutes = env.verification.expiryMinutes || 10;
-    const code = Math.random().toString().slice(2, 2 + codeLength);
+    const code = Math.random()
+      .toString()
+      .slice(2, 2 + codeLength);
     const expires = new Date(Date.now() + expiryMinutes * 60000);
     await userService.updateVerificationCode(email, code, expires);
     await sendVerificationEmail(email, code);
@@ -118,6 +120,5 @@ router.post('/resend-verification', async (req: Request, res: Response, next: Ne
     next(err);
   }
 });
-
 
 export default router;
