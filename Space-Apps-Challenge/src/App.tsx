@@ -121,52 +121,47 @@ function App() {
     <>
       <Sidebar item={item} open={open} setOpen={setOpen} />
 
-      {/* Header alinhado à esquerda, aparência sóbria */}
       <div className="fixed top-4 z-30 flex flex-col items-start gap-2 max-h-[calc(100vh)] overflow-y-auto w-full">
         {!expanded && (
-          <div className="text-2xl font-semibold text-gray-800 w-full">
+          <div className="text-2xl font-semibold text-white w-full">
             <div className="flex items-center gap-2 px-4 py-2 rounded-full ">
-              <RoomIcon />
-              <span className="text-sm font-medium text-gray-800">
+              <RoomIcon className="text-white" />
+              <span className="text-sm font-medium text-white">
                 {/* {viewState.latitude.toFixed(5)},{" "}
                 {viewState.longitude.toFixed(5)} */}
                 Pirituba
               </span>
             </div>
             <div className="mt-8 flex flex-col items-start ml-6">
-              <span className="text-6xl font-bold text-gray-900">
+              <span className="text-6xl text-white">
                 {temperatura}
               </span>
-              <span className="text-2xl text-gray-600 mt-2">{condicao}</span>
+              <span className="text-2xl text-white mt-2">{condicao}</span>
             </div>
-            {/* Temperaturas máxima/mínima e sensação térmica */}
             <div className="flex flex-col items-start mt-6 mb-2 ml-8">
-              <span className="text-lg text-gray-700 font-medium">
-                {tempMax} / <span className="text-gray-500">{tempMin}</span>
+              <span className="text-lg text-white font-medium">
+                {tempMax} / <span className="text-white">{tempMin}</span>
               </span>
-              <span className="text-base text-gray-500">{sensacao}</span>
+              <span className="text-base text-white">{sensacao}</span>
             </div>
-            {/* Card de previsão por hora */}
             <div className="w-full max-w-md mx-auto px-4 mt-2">
-              <div className="bg-white/90 rounded-2xl shadow p-4 flex flex-col">
-                {/* Header do card */}
+              <div className="bg-black/20 rounded-2xl shadow p-4 flex flex-col">
                 <div className="w-full flex items-center justify-between pb-2 text-left">
-                  <span className="block text-base text-gray-700 font-medium">
+                  <span className="block text-base text-white font-medium">
                     Nublado. Máxima de 24 a 26ºC e mínimas de 18 a 20ºC
                   </span>
-                  <span className="block text-lg text-gray-500 font-bold whitespace-nowrap ml-4">
+                  <span className="block text-lg text-white font-bold whitespace-nowrap ml-4">
                     5º
                   </span>
                 </div>
-                <div className="w-full text-left text-sm text-gray-500 pb-2">
+                <div className="w-full text-left text-sm text-white pb-2">
                   Temperaturas um pouco mais baixas do que ontem
                 </div>
                 <div className="border-b border-gray-200 my-2" />
-                {/* Linha de previsão por hora */}
                 <div className="flex flex-row justify-between items-end">
                   {hourlyForecast.map((f, idx) => (
                     <div key={idx} className="flex flex-col items-center mx-1">
-                      <span className="text-xs text-gray-500 mb-1">
+                      <span className="text-xs text-white mb-1">
                         {f.hour}
                       </span>
                       {f.type === "sun" ? (
@@ -175,9 +170,9 @@ function App() {
                           fontSize="large"
                         />
                       ) : (
-                        <CloudIcon className="text-gray-400" fontSize="large" />
+                        <CloudIcon className="text-white" fontSize="large" />
                       )}
-                      <span className="text-sm text-gray-700 mt-1">
+                      <span className="text-sm text-white mt-1">
                         {f.temp}
                       </span>
                     </div>
@@ -185,15 +180,13 @@ function App() {
                 </div>
               </div>
               <div className="flex flex-col items-start mt-6 mb-2 ml-7">
-                <span className="text-lg text-gray-700 font-medium">
-                  {tempMax} / <span className="text-gray-500">{tempMin}</span>
+                <span className="text-lg text-white font-medium">
+                  {tempMax} / <span className="text-white">{tempMin}</span>
                 </span>
-                <span className="text-base text-gray-500">{sensacao}</span>
+                <span className="text-base text-white">{sensacao}</span>
               </div>
-
-              {/* Novo card em grid */}
-              <div className="bg-white/90 rounded-2xl shadow p-4 mt-4">
-                <div className="grid grid-cols-5 gap-2 text-center text-xs text-gray-500 font-medium mb-2">
+              <div className="bg-black/20 rounded-2xl shadow p-4 mt-4">
+                <div className="grid grid-cols-5 gap-2 text-center text-xs text-white font-medium mb-2">
                   <span>Hora</span>
                   <span>%</span>
                   <span>Nuvem</span>
@@ -203,16 +196,16 @@ function App() {
                 <div className="grid grid-cols-5 gap-2">
                   {gridForecast.map((item, idx) => (
                     <React.Fragment key={idx}>
-                      <span className="text-xs text-gray-700 flex items-center justify-center">
+                      <span className="text-xs text-white flex items-center justify-center">
                         {item.hour}
                       </span>
-                      <span className="text-xs text-gray-700 flex items-center justify-center">
+                      <span className="text-xs text-white flex items-center justify-center">
                         {item.percent}
                       </span>
                       <span className="flex items-center justify-center">
                         {item.cloud ? (
                           <CloudIcon
-                            className="text-gray-400"
+                            className="text-white"
                             fontSize="small"
                           />
                         ) : (
@@ -222,24 +215,23 @@ function App() {
                       <span className="flex items-center justify-center">
                         {item.moon ? (
                           <NightsStayIcon
-                            className="text-blue-400"
+                            className="text-white"
                             fontSize="small"
                           />
                         ) : (
                           <span className="w-5 h-5" />
                         )}
                       </span>
-                      <span className="text-xs text-gray-700 flex items-center justify-center">
+                      <span className="text-xs text-white flex items-center justify-center">
                         {item.temp}
                       </span>
                     </React.Fragment>
                   ))}
                 </div>
               </div>
-
               <div className="w-full max-w-md mx-auto mt-4">
-                <div className="bg-white/90 rounded-2xl shadow p-4 flex flex-col">
-                  <span className="text-base text-left text-gray-700 font-semibold mb-2">
+                <div className="bg-black/20 rounded-2xl shadow p-4 flex flex-col">
+                  <span className="text-base text-left text-white font-semibold mb-2">
                     Radar
                   </span>
                   <div
@@ -277,71 +269,68 @@ function App() {
                 </div>
               </div>
             </div>
-             {/* Card IQAR com progress bar */}
-      <div className="w-full max-w-md mx-auto px-4 mt-4">
-        <div className="bg-white/80 rounded-2xl shadow p-4 flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-base text-gray-700 font-semibold">IQAR</span>
-            <span className="text-lg font-bold text-gray-800">{iqar}</span>
-          </div>
-          <LinearProgress
-            variant="determinate"
-            value={iqar}
-            sx={{
-              height: 10,
-              borderRadius: 8,
-              backgroundColor: "#e5e7eb",
-              "& .MuiLinearProgress-bar": { backgroundColor: "#38bdf8" },
-            }}
-          />
-          <span className="text-xs text-gray-500 mt-2">
-            Índice de qualidade do ar razoável
-          </span>
-        </div>
-      </div>
-
-      {/* Linha de cards pequenos com progress, 3 vezes */}
-      {[cardsRow, cardsRow2, cardsRow].map((row, idx) => (
-        <div key={idx} className="w-full max-w-md mx-auto px-4 mt-4 flex gap-4">
-          {row.map((card, i) => (
-            <div key={i} className="flex-1 bg-white/80 rounded-2xl shadow p-4 flex flex-col items-start">
-              <span className="text-sm text-gray-500">{card.label}</span>
-              <span className="text-xl font-bold text-gray-800">{card.value}</span>
-              <LinearProgress
-                variant="determinate"
-                value={card.progress}
-                sx={{
-                  width: "100%",
-                  height: 8,
-                  borderRadius: 8,
-                  backgroundColor: "#e5e7eb",
-                  "& .MuiLinearProgress-bar": { backgroundColor: "#38bdf8" },
-                  marginTop: "0.5rem",
-                }}
-              />
-              {card.extra && (
-                <span className="text-xs text-gray-400 mt-1">{card.extra}</span>
-              )}
+            {/* Card IQAR com progress bar */}
+            <div className="w-full max-w-md mx-auto px-4 mt-4">
+              <div className="bg-black/20 rounded-2xl shadow p-4 flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-base text-white font-semibold">IQAR</span>
+                  <span className="text-lg font-bold text-white">{iqar}</span>
+                </div>
+                <LinearProgress
+                  variant="determinate"
+                  value={iqar}
+                  sx={{
+                    height: 10,
+                    borderRadius: 8,
+                    backgroundColor: "#e5e7eb",
+                    "& .MuiLinearProgress-bar": { backgroundColor: "#38bdf8" },
+                  }}
+                />
+                <span className="text-xs text-white mt-2">
+                  Índice de qualidade do ar razoável
+                </span>
+              </div>
             </div>
-          ))}
-        </div>
-      ))}
-
-      {/* Dois cards grandes com dados */}
-      <div className="w-full max-w-md mx-auto px-4 mt-4 flex flex-col gap-4">
-        {bigCards.map((card, idx) => (
-          <div key={idx} className="bg-white/80 rounded-2xl shadow p-6 flex flex-col items-start">
-            <span className="text-lg font-semibold text-gray-700">{card.title}</span>
-            <span className="text-3xl font-bold text-gray-900 mt-2">{card.value}</span>
-            <span className="text-sm text-gray-500 mt-2">{card.description}</span>
-          </div>
-        ))}
-      </div>
+            {/* Linha de cards pequenos com progress, 3 vezes */}
+            {[cardsRow, cardsRow2, cardsRow].map((row, idx) => (
+              <div key={idx} className="w-full max-w-md mx-auto px-4 mt-4 flex gap-4">
+                {row.map((card, i) => (
+                  <div key={i} className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start">
+                    <span className="text-sm text-white">{card.label}</span>
+                    <span className="text-xl font-bold text-white">{card.value}</span>
+                    <LinearProgress
+                      variant="determinate"
+                      value={card.progress}
+                      sx={{
+                        width: "100%",
+                        height: 8,
+                        borderRadius: 8,
+                        backgroundColor: "#e5e7eb",
+                        "& .MuiLinearProgress-bar": { backgroundColor: "#38bdf8" },
+                        marginTop: "0.5rem",
+                      }}
+                    />
+                    {card.extra && (
+                      <span className="text-xs text-white mt-1">{card.extra}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+            {/* Dois cards grandes com dados */}
+            <div className="w-full max-w-md mx-auto px-4 mt-4 flex flex-col gap-4">
+              {bigCards.map((card, idx) => (
+                <div key={idx} className="bg-black/20 rounded-2xl shadow p-6 flex flex-col items-start">
+                  <span className="text-lg font-semibold text-white">{card.title}</span>
+                  <span className="text-3xl font-bold text-white mt-2">{card.value}</span>
+                  <span className="text-sm text-white mt-2">{card.description}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Search e header só aparecem quando expandido */}
       {expanded && (
         <div className="w-screen flex items-center justify-start px-6 py-4 bg-gray-100/95 absolute top-0 left-0 z-20">
           <div className="relative flex-1 w-full max-w-xl">
@@ -357,12 +346,12 @@ function App() {
             {showDropdown && (
               <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-auto z-30">
                 {loading && (
-                  <div className="px-2 py-1 text-sm text-gray-500">
+                  <div className="px-2 py-1 text-sm text-white bg-transparent">
                     Carregando...
                   </div>
                 )}
                 {results.length === 0 && !loading && search.length >= 3 && (
-                  <div className="px-2 py-1 text-sm text-gray-500">
+                  <div className="px-2 py-1 text-sm text-white bg-transparent">
                     Nenhum resultado
                   </div>
                 )}
@@ -370,8 +359,9 @@ function App() {
                   <button
                     key={item.properties.place_id}
                     type="button"
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm text-white bg-transparent"
                     onMouseDown={() => handleSelect(item)}
+                    style={{ background: "transparent" }}
                   >
                     {item.properties.formatted}
                   </button>
@@ -382,13 +372,12 @@ function App() {
         </div>
       )}
 
-      {/* Mapa: ocupa a tela toda se expandido, ou só um rodapé se minimizado */}
       <div
         className={`fixed bottom-0 left-0 transition-all duration-300 ${
           expanded
             ? "w-screen h-screen z-10"
             : "w-full h-0 max-w-md mx-auto mb-4 rounded-xl shadow-lg z-10 cursor-pointer"
-        } bg-white`}
+        } bg-transparent`}
         style={{ right: 0 }}
         onClick={() => !expanded && setExpanded(true)}
       >
@@ -428,8 +417,6 @@ function App() {
           </div>
         )}
       </div>
-
-     
     </>
   );
 }
