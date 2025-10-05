@@ -66,6 +66,7 @@ export default function Sidebar({
     if (!onGoToData) return;
     setLoading(true);
     setValues(date ? date.toISOString() : new Date().toISOString());
+    setDate(undefined);
   }
 
   function handleLimpar() {
