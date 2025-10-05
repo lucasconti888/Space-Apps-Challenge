@@ -38,6 +38,9 @@ export const useApp = () => {
   } | null>(null);
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [hasLeftUserLoc, setHasLeftUserLoc] = useState(false);
+  const [understood, setUnderstood] = useState(false);
 
   // Busca nome do local (apenas quando viewToPredict muda)
   async function fetchLocationName(lat: number, lng: number) {
@@ -47,11 +50,15 @@ export const useApp = () => {
         `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${API_KEY_GEOAPP}`
       );
       const data = await res.json();
-      if (data.features && data.features[0] && !!data.features[0].properties.county_code) {
+      if (
+        data.features &&
+        data.features[0] &&
+        !!data.features[0].properties.county_code
+      ) {
         setLocationLabel(
           `${data.features[0].properties.city}, ${data.features[0].properties.county_code}`
         );
-      } 
+      }
     } finally {
       setLocationLoading(false);
     }
@@ -186,6 +193,35 @@ export const useApp = () => {
     }
   }
 
+  const handleRecenter = () => {
+    if (userLocation) {
+      setViewState((vs) => ({
+        ...vs,
+        latitude: userLocation.lat,
+        longitude: userLocation.lng,
+        zoom: 12,
+      }));
+    }
+  };
+
+  useEffect(() => {
+    if (expanded && !understood) {
+      setShowTutorial(true);
+    }
+  }, [expanded, understood]);
+
+  useEffect(() => {
+    if (
+      userLocation &&
+      (Math.abs(viewState.latitude - userLocation.lat) > 0.0005 ||
+        Math.abs(viewState.longitude - userLocation.lng) > 0.0005)
+    ) {
+      setHasLeftUserLoc(true);
+    } else {
+      setHasLeftUserLoc(false);
+    }
+  }, [viewState.latitude, viewState.longitude, userLocation]);
+
   return {
     clickedItem,
     bgUrl,
@@ -204,11 +240,16 @@ export const useApp = () => {
     viewState,
     results,
     loading,
+    hasLeftUserLoc,
+    showTutorial,
+    setUnderstood,
+    handleRecenter,
     setClickedItem,
     setOpen,
     fetchPrediction,
     setShowDropdown,
     handleSelect,
+    setShowTutorial,
     setViewState,
     setExpanded,
     setClickedMarkers,

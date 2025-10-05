@@ -125,16 +125,6 @@ export default function Sidebar({ item, open, setOpen, onGoToData }: SidebarProp
                     />
                   </PopoverContent>
                 </Popover>
-                <Button
-                  variant={useCurrent ? "default" : "outline"}
-                  className="ml-2"
-                  onClick={() => {
-                    setUseCurrent(true);
-                    setDate(undefined);
-                  }}
-                >
-                  Usar data atual
-                </Button>
               </div>
             </div>
           </ListItem>

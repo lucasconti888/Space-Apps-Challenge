@@ -2,7 +2,6 @@ import RoomIcon from "@mui/icons-material/Room";
 import LinearProgress from "@mui/material/LinearProgress";
 import { ChevronLeftIcon, Search as SearchIcon } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useEffect, useState } from "react";
 import Map, { Marker } from "react-map-gl/maplibre";
 import "./App.css";
 import { useApp } from "./App.hook";
@@ -32,6 +31,11 @@ function App() {
     setClickedMarkers,
     handleInputChange,
     setViewToPredict,
+    setUnderstood,
+    handleRecenter,
+    setShowTutorial,
+    showTutorial,
+    hasLeftUserLoc,
     userLocation,
     viewState,
     results,
@@ -44,79 +48,8 @@ function App() {
   const { bigCards, cardsRow, sensacao, tempMax, tempMin, temperatura } =
     extractWeatherData(apiData);
 
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [hasLeftUserLoc, setHasLeftUserLoc] = useState(false);
-  const [understood, setUnderstood] = useState(false);
-
-  useEffect(() => {
-    if (expanded && !understood) {
-      setShowTutorial(true);
-    }
-  }, [expanded, understood]);
-
-  useEffect(() => {
-    if (
-      userLocation &&
-      (Math.abs(viewState.latitude - userLocation.lat) > 0.0005 ||
-        Math.abs(viewState.longitude - userLocation.lng) > 0.0005)
-    ) {
-      setHasLeftUserLoc(true);
-    } else {
-      setHasLeftUserLoc(false);
-    }
-  }, [viewState.latitude, viewState.longitude, userLocation]);
-
-  const handleRecenter = () => {
-    if (userLocation) {
-      setViewState((vs) => ({
-        ...vs,
-        latitude: userLocation.lat,
-        longitude: userLocation.lng,
-        zoom: 12,
-      }));
-    }
-  };
-
   return (
     <>
-      {/* Conteúdo principal */}
-      <div
-        style={{
-          minHeight: "100vh",
-          minWidth: "100vw",
-          backgroundImage: `url('${bgUrl}')`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          transition: "background-image 0.5s",
-        }}
-      >
-        {/* Botão de recentralizar */}
-        {hasLeftUserLoc && userLocation && (
-          <button
-            className="fixed bottom-8 right-8 z-40 bg-white shadow-lg rounded-full p-3 border border-gray-200 hover:bg-blue-50 transition"
-            onClick={handleRecenter}
-            aria-label="Recentrar no usuário"
-          >
-            <svg
-              width="24"
-              height="24"
-              fill="none"
-              stroke="#2563eb"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <circle cx="12" cy="12" r="3" fill="#2563eb" />
-              <line x1="12" y1="2" x2="12" y2="6" />
-              <line x1="12" y1="18" x2="12" y2="22" />
-              <line x1="2" y1="12" x2="6" y2="12" />
-              <line x1="18" y1="12" x2="22" y2="12" />
-            </svg>
-          </button>
-        )}
-
         <Sidebar
           item={clickedItem as any}
           open={open}
@@ -227,7 +160,37 @@ function App() {
           </div>
         )}
 
-        {!expanded && (
+          {expanded && hasLeftUserLoc && userLocation && (
+            <div
+              className="absolute left-8 bottom-4 z-20 flex justify-left cursor-pointer"
+              onClick={handleRecenter}
+              aria-label="Recentrar no usuário"
+            >
+              <svg
+                width={50}
+                height={50}
+                viewBox="0 0 140 120"
+                fill="none"
+                stroke="#2563eb"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ display: "block" }}
+              >
+                <circle cx="60" cy="60" r="50" />
+                <circle cx="60" cy="60" r="20" fill="#2563eb" />
+                <line x1="60" y1="10" x2="60" y2="30" />
+                <line x1="60" y1="90" x2="60" y2="110" />
+                <line x1="10" y1="60" x2="30" y2="60" />
+                <line x1="90" y1="60" x2="110" y2="60" />
+              </svg>
+              <span className="ml-4 text-white text-lg font-semibold select-none">
+                60x60px
+              </span>
+            </div>
+          )}
+
+          {!expanded && (
           <div className="fixed top-4 z-30 flex flex-col items-start gap-2 max-h-[calc(100vh)] overflow-y-auto w-full">
             <div className="text-2xl font-semibold text-white w-full">
               <div className="flex items-center gap-3 px-4 py-2 rounded-full ml-6 mt-8">
@@ -500,7 +463,6 @@ function App() {
             ))}
           </Map>
         </div>
-      </div>
     </>
   );
 }
