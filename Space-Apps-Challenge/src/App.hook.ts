@@ -7,11 +7,15 @@ const API_KEY_GEOAPP = "6744060a5fd549059bd59a466bae65b6";
 
 export const useApp = () => {
   const [clickedItem, setClickedItem] = useState<MapLayerMouseEvent>();
-  const [viewState, setViewState] = useState<{
-    latitude: number;
-    longitude: number;
-    zoom: number;
-  }>();
+  const [viewState, setViewState] = useState({
+    latitude: -23.5,
+    longitude: -46.6,
+    zoom: 12,
+  });
+  const [viewToPredict, setViewToPredict] = useState({
+    latitude: -23.5,
+    longitude: -46.6,
+  });
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<any[]>([]);
@@ -35,29 +39,21 @@ export const useApp = () => {
     lng: number;
   } | null>(null);
 
-  async function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const value = e.target.value;
-    setSearch(value);
-    if (value.length < 3) {
-      setResults([]);
-      setShowDropdown(false);
-      return;
-    }
-    setLoading(true);
-    setShowDropdown(true);
+  // Busca nome do local (apenas quando viewToPredict muda)
+  async function fetchLocationName(lat: number, lng: number) {
+    setLocationLoading(true);
     try {
       const res = await fetch(
-        `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(
-          value
-        )}&limit=5&apiKey=${API_KEY_GEOAPP}`
+        `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${API_KEY_GEOAPP}`
       );
       const data = await res.json();
-      setResults(data.features);
-    } catch (err) {
-      console.error(err);
-      setResults([]);
+      if (data.features && data.features[0] && !!data.features[0].properties.county_code) {
+        setLocationLabel(
+          `${data.features[0].properties.city}, ${data.features[0].properties.county_code}`
+        );
+      } 
     } finally {
-      setLoading(false);
+      setLocationLoading(false);
     }
   }
 
@@ -97,135 +93,75 @@ export const useApp = () => {
     }
   }
 
-  function handleSelect(place: any) {
-    const longitude = place.geometry.coordinates[0];
-    const latitude = place.geometry.coordinates[1];
-    setViewState((vs) => ({ ...vs, longitude, latitude, zoom: 14 }));
-    setSearch(place.properties.formatted);
-    setLocationLabel(place.properties.formatted);
-    setShowDropdown(false);
-    fetchPrediction(latitude, longitude);
-  }
-
-  async function fetchLocationName(lat: number, lng: number) {
-    try {
-      const res = await fetch(
-        `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=6744060a5fd549059bd59a466bae65b6`
-      );
-      const data = await res.json();
-      if (data.features && data.features[0]) {
-        setLocationLabel(
-          `${data.features[0].properties.city}, ${data.features[0].properties.county_code}`
-        );
-      } else {
-        setLocationLabel(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-      }
-    } catch {
-      setLocationLabel(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-    }
-  }
-
+  // Ao montar, pega a localização do usuário e inicializa tudo
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        async (pos) => {
+        (pos) => {
           const { latitude, longitude } = pos.coords;
+          setUserLocation({ lat: latitude, lng: longitude });
           setViewState((vs) => ({
             ...vs,
             latitude,
             longitude,
             zoom: 12,
           }));
-          try {
-            setLocationLoading(true);
-            await new Promise((res) => setTimeout(res, 600));
-            const res = await fetch(
-              `https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=6744060a5fd549059bd59a466bae65b6`
-            );
-            const data = await res.json();
-            if (data.features && data.features[0]) {
-              setLocationLabel(
-                `${data.features[0].properties.city}, ${data.features[0].properties.county_code}`
-              );
-            } else {
-              setLocationLabel(
-                `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
-              );
-            }
-          } catch {
-            setLocationLabel(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
-          } finally {
-            setLocationLoading(false);
-          }
+          setViewToPredict({
+            latitude,
+            longitude,
+          });
         },
         () => {
-          setLocationLabel("Localização não permitida");
-          setLocationLoading(false);
+          setUserLocation(null);
+          // Mantém o valor default
         }
       );
-    } else {
-      setLocationLabel("Localização não suportada");
-      setLocationLoading(false);
     }
   }, []);
 
+  // Só busca o nome do local e previsão quando viewToPredict mudar
   useEffect(() => {
-    if (!viewState?.latitude || !viewState?.longitude) return;
+    fetchLocationName(viewToPredict.latitude, viewToPredict.longitude);
+    fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
+  }, [viewToPredict.latitude, viewToPredict.longitude]);
 
-    async function fetchLocationName(lat: number, lng: number) {
-      setLocationLoading(true);
-      try {
-        const res = await fetch(
-          `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=6744060a5fd549059bd59a466bae65b6`
-        );
-        const data = await res.json();
-        if (data.features && data.features[0]) {
-          setLocationLabel(
-            `${data.features[0].properties.city}, ${data.features[0].properties.county_code}`
-          );
-        } else {
-          setLocationLabel(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-        }
-      } catch {
-        setLocationLabel(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-      } finally {
-        setLocationLoading(false);
-      }
-    }
-    if (viewState?.latitude !== -23.5 && viewState?.longitude !== -46.6) {
-      fetchLocationName(viewState?.latitude, viewState?.longitude);
-    }
-  }, [viewState]);
-
+  // Atualiza o background quando os dados mudam
   useEffect(() => {
     setBgUrl(getBgFromApi(apiData));
   }, [apiData]);
 
-  useEffect(() => {
-    if (!viewState?.latitude || !viewState?.longitude) return;
+  // handleSelect, handleMapClick, handleGoToUserLocation devem SEMPRE alterar viewToPredict
+  function handleSelect(place: any) {
+    const longitude = place.geometry.coordinates[0];
+    const latitude = place.geometry.coordinates[1];
+    setViewState((vs) => ({ ...vs, longitude, latitude, zoom: 14 }));
+    setViewToPredict({ latitude, longitude });
+    setSearch(place.properties.formatted);
+    setLocationLabel(place.properties.formatted);
+    setShowDropdown(false);
+  }
 
-    fetchLocationName(viewState.latitude, viewState.longitude);
-  }, [viewState]);
+  function handleMapClick(lat: number, lng: number) {
+    setViewState((vs) => ({ ...vs, latitude: lat, longitude: lng }));
+    setViewToPredict({ latitude: lat, longitude: lng });
+  }
 
-  useEffect(() => {
-    if (!viewState?.latitude || !viewState?.longitude) return;
-
-    fetchPrediction(viewState.latitude, viewState.longitude);
-  }, [viewState]);
-
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserLocation({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          });
-        },
-        () => setUserLocation(null)
-      );
+  function handleGoToUserLocation() {
+    if (userLocation) {
+      setViewState((vs) => ({
+        ...vs,
+        latitude: userLocation.lat,
+        longitude: userLocation.lng,
+        zoom: 12,
+      }));
+      setViewToPredict({
+        latitude: userLocation.lat,
+        longitude: userLocation.lng,
+      });
     }
-  }, []);
+    setOpen(false);
+    setExpanded(false);
+  }
 
   return {
     clickedItem,
@@ -254,6 +190,9 @@ export const useApp = () => {
     setExpanded,
     setClickedMarkers,
     setLocationLabel,
-    handleInputChange,
+    viewToPredict,
+    setViewToPredict,
+    handleMapClick,
+    handleGoToUserLocation,
   };
 };
