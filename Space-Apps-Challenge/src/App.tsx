@@ -104,7 +104,7 @@ function App() {
             <button
               className="bg-[#f3f4f6] hover:bg-white rounded-full p-2 shadow-lg border border-gray-200 transition w-10 flex items-center justify-center"
               onClick={() => setExpanded(false)}
-              aria-label="Voltar ao menu"
+              aria-label="Back to menu"
             >
               <ChevronLeftIcon className="w-5 h-5 text-gray-700" />
             </button>
@@ -117,7 +117,7 @@ function App() {
             <Input
               type="search"
               value={search}
-              placeholder="Digite para pesquisar..."
+              placeholder="Type to search..."
               className="w-full bg-transparent outline-none text-gray-800 placeholder-gray-400 border-0 shadow-none"
               onInput={handleInputChange}
               onFocus={() => search.length >= 3 && setShowDropdown(true)}
@@ -128,12 +128,12 @@ function App() {
               <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-auto z-30">
                 {loading && (
                   <div className="px-2 py-1 text-sm text-gray-600">
-                    Carregando...
+                    Loading...
                   </div>
                 )}
                 {results.length === 0 && !loading && search.length >= 3 && (
                   <div className="px-2 py-1 text-sm text-gray-600">
-                    Nenhum resultado
+                    No results
                   </div>
                 )}
                 {results.map((item) => (
@@ -153,20 +153,19 @@ function App() {
         </div>
       )}
 
-      {/* Tutorial abaixo da search bar, centralizado */}
+      {/* Tutorial below the search bar, centered */}
       {expanded && showTutorial && (
         <div className="absolute left-0 right-0 top-[20rem] z-40 flex justify-center pointer-events-none">
           <div
             className="bg-white rounded-xl shadow-lg p-6 max-w-xs text-center flex flex-col items-center pointer-events-auto"
-            style={{ marginTop: 24 }} // Adiciona margin top
+            style={{ marginTop: 24 }}
           >
             <span className="text-2xl mb-2">👆</span>
             <h2 className="text-lg font-semibold mb-2">
-              Clique no local desejado
+              Click on the desired location
             </h2>
             <p className="text-gray-700 mb-4">
-              Clique no mapa para obter as informações climáticas do local
-              selecionado.
+              Click on the map to get the weather information for the selected location.
             </p>
             <button
               className="bg-blue-600 text-white px-6 py-2 rounded-full font-semibold shadow hover:bg-blue-700 transition"
@@ -175,7 +174,7 @@ function App() {
                 setUnderstood(true);
               }}
             >
-              Entendi!
+              Got it!
             </button>
           </div>
         </div>
@@ -185,7 +184,7 @@ function App() {
         <div
           className="absolute left-4 bottom-4 z-2 flex justify-left cursor-pointer"
           onClick={handleRecenter}
-          aria-label="Recentrar no usuário"
+          aria-label="Recenter to user location"
         >
           <svg
             width={50}
@@ -258,7 +257,7 @@ function App() {
                 <Skeleton className="w-48 h-4 bg-white/30" />
               ) : (
                 <>
-                  Máx {tempMax} · Mín {tempMin} · {sensacao}
+                  Max {tempMax} · Min {tempMin} · {sensacao}
                 </>
               )}
             </div>
@@ -297,7 +296,7 @@ function App() {
                     </Map>
                     <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                       <span className="text-white font-semibold text-sm">
-                        Clique para expandir
+                        Click to expand
                       </span>
                     </div>
                   </div>
@@ -483,7 +482,7 @@ function App() {
       <div
         className={`fixed inset-0 transition-colors duration-500`}
         style={{
-          zIndex: 0, 
+          zIndex: 0,
           backgroundImage: `url('${currentBg}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",

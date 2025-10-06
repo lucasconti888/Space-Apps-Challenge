@@ -67,7 +67,7 @@ export default function Sidebar({
     setLoading(true);
     setValues(date ? date.toISOString() : new Date().toISOString());
     setDate(undefined);
-    setTimeout(() => setLoading(false), 500); // ou use um callback/promise se setValues for assíncrono
+    setTimeout(() => setLoading(false), 500);
   }
 
   return (
@@ -75,14 +75,14 @@ export default function Sidebar({
       <DrawerContent
         className="!bg-gradient-to-br from-white z-30 via-blue-50 to-blue-100 max-w-md w-full mx-auto rounded-t-2xl shadow-2xl border border-blue-200"
         style={{
-          maxHeight: "calc(100vh - 64px)", // 64px de espaço para barra superior, ajuste se necessário
+          maxHeight: "calc(100vh - 64px)",
           overflowY: "auto",
         }}
       >
         <List>
           <ListItem>
             <Typography variant="h6" sx={{ width: "100%" }}>
-              Filtros de Previsão
+              Forecast Filters
             </Typography>
           </ListItem>
           <ListItem>
@@ -94,7 +94,7 @@ export default function Sidebar({
                 color="text.secondary"
                 sx={{ width: "100%", fontWeight: 500, color: "#222" }}
               >
-                Endereço selecionado:
+                Selected address:
                 <br />
                 <span style={{ color: "#444" }}>{address}</span>
               </Typography>
@@ -103,7 +103,7 @@ export default function Sidebar({
           <ListItem>
             <div className="flex flex-col gap-3 w-full">
               <Label htmlFor="date-picker" className="px-1">
-                Data
+                Date
               </Label>
               <div className="flex gap-2 items-center">
                 <Popover open={openCalendar} onOpenChange={setOpenCalendar}>
@@ -113,7 +113,7 @@ export default function Sidebar({
                       id="date-picker"
                       className="w-32 justify-between font-normal"
                     >
-                      {date ? date.toLocaleDateString() : "Selecionar data"}
+                      {date ? date.toLocaleDateString() : "Select date"}
                       <ChevronDownIcon />
                     </Button>
                   </PopoverTrigger>
@@ -143,7 +143,7 @@ export default function Sidebar({
                 onClick={handleBuscar}
                 disabled={loading || !date}
               >
-                Buscar previsão filtrada
+                Search filtered forecast
               </Button>
             </div>
           </ListItem>
@@ -161,7 +161,7 @@ export default function Sidebar({
                 if (onGoToData) onGoToData();
               }}
             >
-              Ver dados atuais do local
+              See current location data
             </Button>
           </ListItem>
         </List>
