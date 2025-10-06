@@ -1,7 +1,7 @@
 import type { MapLayerMouseEvent } from "maplibre-gl";
 import { useEffect, useState, useRef } from "react";
 import type { ApiResponse } from "./App.types";
-import { API_URL, BG_IMAGES, getBgFromApi } from "./App.utils";
+import { fetchOpenMeteo, BG_IMAGES, getBgFromApi } from "./App.utils"; // ajuste aqui
 
 const API_KEY_GEOAPP = "6744060a5fd549059bd59a466bae65b6";
 
@@ -66,93 +66,73 @@ export const useApp = () => {
     }
   }
 
+  // Agora usando Open-Meteo
   async function fetchPrediction(lat: number, long: number, dateISO?: string) {
     setIsFetching(true);
-
-    const payload = {
-      lat,
-      long,
-      lon: long,
-      date: dateISO ?? new Date().toISOString(),
-    };
-
     try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const data: ApiResponse = await res.json();
-
+      const data = await fetchOpenMeteo(lat, long); // usa util Open-Meteo
       setApiData(data);
 
-      setSummary(data?.resumo ?? null);
-      setLastUpdated(
-        data?.local?.data_referencia
-          ? new Date(data.local.data_referencia).toLocaleString()
-          : new Date().toLocaleString()
+      // Resumo simples do Open-Meteo
+      setSummary(
+        data?.current
+          ? `Temperatura: ${data.current.temperature_2m}°C, Umidade: ${data.current.relative_humidity_2m}%, Vento: ${data.current.wind_speed_10m} km/h`
+          : "Sem dados climáticos para este local."
       );
-    } catch (err: any) {
+      setLastUpdated(new Date().toLocaleString());
+    } catch {
       setSummary("Não foi possível obter a previsão no momento.");
     } finally {
       setIsFetching(false);
     }
   }
 
-  // Ref para controlar se já inicializou a busca inicial
+  // Ao montar, pega a localização do usuário e inicializa tudo
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setUserLocation({ lat: latitude, lng: longitude });
+          setViewState((vs) => ({
+            ...vs,
+            latitude,
+            longitude,
+            zoom: 12,
+          }));
+          setViewToPredict({
+            latitude,
+            longitude,
+          });
+        },
+        () => {
+          setUserLocation(null);
+          // Mantém o valor default
+        }
+      );
+    }
+  }, []);
 
+  // Só busca o nome do local e previsão quando viewToPredict mudar
+  useEffect(() => {
+    if (
+      !hasFetchedInitial.current &&
+      userLocation &&
+      viewToPredict.latitude === userLocation.lat &&
+      viewToPredict.longitude === userLocation.lng
+    ) {
+      hasFetchedInitial.current = true;
+      fetchLocationName(viewToPredict.latitude, viewToPredict.longitude);
+      fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
+      return;
+    }
 
-// Ao montar, pega a localização do usuário e inicializa tudo
-useEffect(() => {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setUserLocation({ lat: latitude, lng: longitude });
-        setViewState((vs) => ({
-          ...vs,
-          latitude,
-          longitude,
-          zoom: 12,
-        }));
-        setViewToPredict({
-          latitude,
-          longitude,
-        });
-      },
-      () => {
-        setUserLocation(null);
-        // Mantém o valor default
-      }
-    );
-  }
-}, []);
-
-// Só busca o nome do local e previsão quando viewToPredict mudar
-useEffect(() => {
-  // Só executa a busca inicial UMA vez, quando a localização do usuário for definida
-  if (
-    !hasFetchedInitial.current &&
-    userLocation &&
-    viewToPredict.latitude === userLocation.lat &&
-    viewToPredict.longitude === userLocation.lng
-  ) {
-    hasFetchedInitial.current = true;
-    fetchLocationName(viewToPredict.latitude, viewToPredict.longitude);
-    fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
-    return;
-  }
-
-  // Para as demais mudanças de viewToPredict (após inicialização)
-  if (hasFetchedInitial.current) {
-    fetchLocationName(viewToPredict.latitude, viewToPredict.longitude);
-    fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [viewToPredict.latitude, viewToPredict.longitude, userLocation]);
+    if (hasFetchedInitial.current) {
+      fetchLocationName(viewToPredict.latitude, viewToPredict.longitude);
+      fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewToPredict.latitude, viewToPredict.longitude, userLocation]);
 
   useEffect(() => {
     setBgUrl(getBgFromApi(apiData));

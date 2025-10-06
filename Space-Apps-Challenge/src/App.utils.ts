@@ -1,7 +1,7 @@
 import type { ApiResponse } from "./App.types";
 
-export const API_URL =
-  "https://weather-api-1063811848516.southamerica-east1.run.app/api/prediction";
+// Substitua a API_URL pelo endpoint do Open-Meteo
+export const API_URL = "https://api.open-meteo.com/v1/forecast";
 
 export function fmt(n?: number, digits = 0) {
   if (n == null || Number.isNaN(n)) return "—";
@@ -34,63 +34,70 @@ export function getBgFromApi(apiData?: ApiResponse): string {
   return BG_IMAGES.default;
 }
 
-export function extractWeatherData(apiData?: ApiResponse) {
-  const windKmh =
-    apiData?.clima?.vento?.valor != null
-      ? apiData.clima.vento.valor * 3.6
-      : undefined;
+// Função para buscar previsão do tempo do Open-Meteo
+export async function fetchOpenMeteo(lat: number, lon: number) {
+  // Você pode ajustar os parâmetros conforme desejar
+  const params = new URLSearchParams({
+    latitude: lat.toString(),
+    longitude: lon.toString(),
+    current:
+      "temperature_2m,precipitation,weathercode,wind_speed_10m,relative_humidity_2m",
+    hourly:
+      "temperature_2m,precipitation,weathercode,wind_speed_10m,relative_humidity_2m",
+    timezone: "auto",
+  });
+  const url = `${API_URL}?${params.toString()}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Erro ao buscar dados do Open-Meteo");
+  return res.json();
+}
+
+// Ajuste dos cards para o formato do Open-Meteo
+export function extractWeatherData(apiData?: any) {
+  // apiData esperado: resposta do Open-Meteo
+  const current = apiData?.current || {};
+  const temperature = current.temperature_2m;
+  const windKmh = current.wind_speed_10m;
+  const humidity = current.relative_humidity_2m;
+  const precipitation = current.precipitation;
 
   const temperatura =
-    apiData?.clima?.temperatura_ar?.valor != null
-      ? `${fmt(apiData.clima.temperatura_ar.valor, 1)}°C`
-      : undefined;
+    temperature != null ? `${temperature.toFixed(1)}°C` : undefined;
 
   const tempMax =
-    apiData?.clima?.temperatura_ar?.valor != null
-      ? `${fmt(apiData.clima.temperatura_ar.valor + 2, 0)}º`
+    apiData?.daily?.temperature_2m_max?.[0] != null
+      ? `${apiData.daily.temperature_2m_max[0].toFixed(0)}º`
       : undefined;
 
   const tempMin =
-    apiData?.clima?.temperatura_ar?.valor != null
-      ? `${fmt(apiData.clima.temperatura_ar.valor - 3, 0)}º`
+    apiData?.daily?.temperature_2m_min?.[0] != null
+      ? `${apiData.daily.temperature_2m_min[0].toFixed(0)}º`
       : undefined;
 
   const sensacao =
-    apiData?.clima?.temperatura_ar?.valor != null
-      ? `Sensação térmica de ${fmt(apiData.clima.temperatura_ar.valor, 1)}º`
+    temperature != null
+      ? `Sensação térmica de ${temperature.toFixed(1)}º`
       : undefined;
 
   const cardsRow = [
     {
       label: "Vento",
-      value: windKmh != null ? `${fmt(windKmh, 1)} km/h` : "—",
+      value: windKmh != null ? `${windKmh.toFixed(1)} km/h` : "—",
       progress: windKmh != null ? Math.min(100, Math.round(windKmh * 4)) : 0,
       extra: "",
     },
     {
       label: "Umidade do ar",
-      value:
-        apiData?.clima?.umidade_do_ar?.valor != null
-          ? `${fmt(apiData.clima.umidade_do_ar.valor, 1)} g/kg`
-          : "—",
-      progress:
-        apiData?.clima?.umidade_do_ar?.valor != null
-          ? Math.min(100, Math.round(apiData.clima.umidade_do_ar.valor * 5))
-          : 0,
+      value: humidity != null ? `${humidity.toFixed(1)}%` : "—",
+      progress: humidity != null ? Math.min(100, Math.round(humidity)) : 0,
       extra: "",
     },
     {
-      label: "Radiação",
-      value:
-        apiData?.clima?.radiacao_solar?.valor != null
-          ? `${fmt(apiData.clima.radiacao_solar.valor, 0)} W/m²`
-          : "—",
+      label: "Precipitação",
+      value: precipitation != null ? `${precipitation.toFixed(2)} mm` : "—",
       progress:
-        apiData?.clima?.radiacao_solar?.valor != null
-          ? Math.min(
-              100,
-              Math.round((apiData.clima.radiacao_solar.valor / 1000) * 100)
-            )
+        precipitation != null
+          ? Math.min(100, Math.round(precipitation * 10))
           : 0,
       extra: "",
     },
@@ -99,36 +106,18 @@ export function extractWeatherData(apiData?: ApiResponse) {
   const bigCards = [
     {
       title: "Precipitação",
-      value:
-        apiData?.clima?.precipitacao?.valor != null
-          ? `${fmt(apiData.clima.precipitacao.valor, 2)} mm/h`
-          : "—",
-      description:
-        apiData?.clima?.precipitacao?.probabilidade != null
-          ? `Probabilidade: ${fmt(
-              apiData.clima.precipitacao.probabilidade * 100,
-              0
-            )}%`
-          : "Sem dados de probabilidade.",
+      value: precipitation != null ? `${precipitation.toFixed(2)} mm` : "—",
+      description: "Precipitação atual.",
     },
     {
-      title: "Neve",
-      value:
-        apiData?.clima?.neve?.valor != null
-          ? `${fmt(apiData.clima.neve.valor, 2)} mm/h`
-          : "—",
-      description:
-        apiData?.clima?.neve?.probabilidade != null
-          ? `Probabilidade: ${fmt(apiData.clima.neve.probabilidade * 100, 0)}%`
-          : "Sem dados de probabilidade.",
+      title: "Temperatura máxima",
+      value: tempMax ?? "—",
+      description: "Temperatura máxima prevista para hoje.",
     },
     {
-      title: "Umidade do solo",
-      value:
-        apiData?.clima?.umidade_do_solo?.valor != null
-          ? `${fmt(apiData.clima.umidade_do_solo.valor, 1)} kg/m²`
-          : "—",
-      description: "Estimativa de água disponível no solo.",
+      title: "Temperatura mínima",
+      value: tempMin ?? "—",
+      description: "Temperatura mínima prevista para hoje.",
     },
   ];
 

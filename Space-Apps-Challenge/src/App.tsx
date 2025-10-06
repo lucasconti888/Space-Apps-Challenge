@@ -48,8 +48,28 @@ function App() {
     bgUrl,
   } = useApp();
 
-  const { bigCards, cardsRow, sensacao, tempMax, tempMin, temperatura } =
+  const { sensacao, tempMax, tempMin, temperatura } =
     extractWeatherData(apiData);
+
+  // Utilidades para exibir valores extras do Open-Meteo
+  const weatherCode = apiData?.current?.weathercode;
+  const weatherDesc = getWeatherDescription(weatherCode);
+  const pressure = apiData?.current?.pressure_msl;
+  const cloudcover = apiData?.current?.cloudcover;
+  const visibility = apiData?.current?.visibility;
+  const windDir = apiData?.current?.wind_direction_10m;
+  const dewpoint = apiData?.current?.dew_point_2m;
+  const apparentTemp = apiData?.current?.apparent_temperature;
+  const uvIndex = apiData?.current?.uv_index;
+  const sunrise = apiData?.daily?.sunrise?.[0];
+  const sunset = apiData?.daily?.sunset?.[0];
+
+  // Função para converter UTC para hora local bonitinha
+  function formatHour(iso?: string) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
 
   const [currentBg, setCurrentBg] = useState(bgUrl);
   const [fade, setFade] = useState(false);
@@ -305,6 +325,7 @@ function App() {
               </div>
             </div>
 
+            {/* Cards principais do Open-Meteo */}
             <div className="w-full max-w-md mx-auto px-4 mt-4 flex gap-4">
               {isFetching
                 ? Array.from({ length: 3 }).map((_, i) => (
@@ -313,18 +334,25 @@ function App() {
                       className="flex-1 h-24 rounded-2xl bg-white/20"
                     />
                   ))
-                : cardsRow.map((card, i) => (
+                : [
+                    // Vento
                     <div
-                      key={i}
+                      key="vento"
                       className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start"
                     >
-                      <span className="text-sm text-white">{card.label}</span>
+                      <span className="text-sm text-white">Vento</span>
                       <span className="text-xl font-bold text-white">
-                        {card.value}
+                        {apiData?.current?.wind_speed_10m != null
+                          ? `${apiData.current.wind_speed_10m.toFixed(1)} km/h`
+                          : "—"}
                       </span>
                       <LinearProgress
                         variant="determinate"
-                        value={card.progress}
+                        value={
+                          apiData?.current?.wind_speed_10m != null
+                            ? Math.min(100, Math.round(apiData.current.wind_speed_10m * 4))
+                            : 0
+                        }
                         sx={{
                           width: "100%",
                           height: 8,
@@ -336,39 +364,201 @@ function App() {
                           marginTop: "0.5rem",
                         }}
                       />
-                      {card.extra && (
-                        <span className="text-xs text-white mt-1">
-                          {card.extra}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                    </div>,
+                    // Umidade
+                    <div
+                      key="umidade"
+                      className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start"
+                    >
+                      <span className="text-sm text-white">Umidade do ar</span>
+                      <span className="text-xl font-bold text-white">
+                        {apiData?.current?.relative_humidity_2m != null
+                          ? `${apiData.current.relative_humidity_2m.toFixed(1)}%`
+                          : "—"}
+                      </span>
+                      <LinearProgress
+                        variant="determinate"
+                        value={
+                          apiData?.current?.relative_humidity_2m != null
+                            ? Math.min(100, Math.round(apiData.current.relative_humidity_2m))
+                            : 0
+                        }
+                        sx={{
+                          width: "100%",
+                          height: 8,
+                          borderRadius: 8,
+                          backgroundColor: "#e5e7eb",
+                          "& .MuiLinearProgress-bar": {
+                            backgroundColor: "#38bdf8",
+                          },
+                          marginTop: "0.5rem",
+                        }}
+                      />
+                    </div>,
+                    // Precipitação
+                    <div
+                      key="precipitacao"
+                      className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start"
+                    >
+                      <span className="text-sm text-white">Precipitação</span>
+                      <span className="text-xl font-bold text-white">
+                        {apiData?.current?.precipitation != null
+                          ? `${apiData.current.precipitation.toFixed(2)} mm`
+                          : "—"}
+                      </span>
+                      <LinearProgress
+                        variant="determinate"
+                        value={
+                          apiData?.current?.precipitation != null
+                            ? Math.min(100, Math.round(apiData.current.precipitation * 10))
+                            : 0
+                        }
+                        sx={{
+                          width: "100%",
+                          height: 8,
+                          borderRadius: 8,
+                          backgroundColor: "#e5e7eb",
+                          "& .MuiLinearProgress-bar": {
+                            backgroundColor: "#38bdf8",
+                          },
+                          marginTop: "0.5rem",
+                        }}
+                      />
+                    </div>,
+                  ]}
             </div>
 
+            {/* NOVOS CARDS EXTRAS */}
+            <div className="w-full max-w-md mx-auto px-4 mt-4 flex gap-4">
+              {/* Pressão atmosférica */}
+              <div className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start">
+                <span className="text-sm text-white">Pressão</span>
+                <span className="text-xl font-bold text-white">
+                  {pressure != null ? `${pressure.toFixed(0)} hPa` : "—"}
+                </span>
+              </div>
+              {/* Cobertura de nuvens */}
+              <div className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start">
+                <span className="text-sm text-white">Nuvens</span>
+                <span className="text-xl font-bold text-white">
+                  {cloudcover != null ? `${cloudcover.toFixed(0)}%` : "—"}
+                </span>
+              </div>
+              {/* Visibilidade */}
+              <div className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start">
+                <span className="text-sm text-white">Visibilidade</span>
+                <span className="text-xl font-bold text-white">
+                  {visibility != null ? `${(visibility / 1000).toFixed(1)} km` : "—"}
+                </span>
+              </div>
+            </div>
+
+            <div className="w-full max-w-md mx-auto px-4 mt-4 flex gap-4">
+              {/* Direção do vento */}
+              <div className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start">
+                <span className="text-sm text-white">Direção do vento</span>
+                <span className="text-xl font-bold text-white">
+                  {windDir != null ? `${windDir.toFixed(0)}°` : "—"}
+                </span>
+              </div>
+              {/* Ponto de orvalho */}
+              <div className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start">
+                <span className="text-sm text-white">Ponto de orvalho</span>
+                <span className="text-xl font-bold text-white">
+                  {dewpoint != null ? `${dewpoint.toFixed(1)}°C` : "—"}
+                </span>
+              </div>
+              {/* Sensação térmica */}
+              <div className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start">
+                <span className="text-sm text-white">Sensação térmica</span>
+                <span className="text-xl font-bold text-white">
+                  {apparentTemp != null ? `${apparentTemp.toFixed(1)}°C` : "—"}
+                </span>
+              </div>
+            </div>
+
+            <div className="w-full max-w-md mx-auto px-4 mt-4 flex gap-4">
+              {/* UV Index */}
+              <div className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start">
+                <span className="text-sm text-white">Índice UV</span>
+                <span className="text-xl font-bold text-white">
+                  {uvIndex != null ? uvIndex.toFixed(1) : "—"}
+                </span>
+              </div>
+              {/* Nascer do sol */}
+              <div className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start">
+                <span className="text-sm text-white">Nascer do sol</span>
+                <span className="text-xl font-bold text-white">
+                  {formatHour(sunrise)}
+                </span>
+              </div>
+              {/* Pôr do sol */}
+              <div className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start">
+                <span className="text-sm text-white">Pôr do sol</span>
+                <span className="text-xl font-bold text-white">
+                  {formatHour(sunset)}
+                </span>
+              </div>
+            </div>
+
+            {/* Card de condição do tempo */}
+            <div className="w-full max-w-md mx-auto px-4 mt-4">
+              <div className="bg-black/20 rounded-2xl shadow p-6 flex flex-col items-center">
+                <span className="text-lg font-semibold text-white mb-2">
+                  Condição atual
+                </span>
+                <span className="text-3xl font-bold text-white mb-2">
+                  {weatherDesc}
+                </span>
+                <span className="text-sm text-white/80">
+                  Código: {weatherCode != null ? weatherCode : "—"}
+                </span>
+              </div>
+            </div>
+
+            {/* Big cards: Temperatura máxima, Temperatura mínima */}
             <div className="w-full max-w-md mx-auto px-4 mt-4 flex flex-col gap-4">
               {isFetching
-                ? Array.from({ length: 3 }).map((_, i) => (
+                ? Array.from({ length: 2 }).map((_, i) => (
                     <Skeleton
                       key={i}
                       className="h-24 rounded-2xl bg-white/20"
                     />
                   ))
-                : bigCards.map((card, idx) => (
+                : [
                     <div
-                      key={idx}
+                      key="max"
                       className="bg-black/20 rounded-2xl shadow p-6 flex flex-col items-start"
                     >
                       <span className="text-lg font-semibold text-white">
-                        {card.title}
+                        Temperatura máxima
                       </span>
                       <span className="text-3xl font-bold text-white mt-2">
-                        {card.value}
+                        {apiData?.daily?.temperature_2m_max?.[0] != null
+                          ? `${apiData.daily.temperature_2m_max[0].toFixed(0)}º`
+                          : "—"}
                       </span>
                       <span className="text-sm text-white mt-2">
-                        {card.description}
+                        Temperatura máxima prevista para hoje.
                       </span>
-                    </div>
-                  ))}
+                    </div>,
+                    <div
+                      key="min"
+                      className="bg-black/20 rounded-2xl shadow p-6 flex flex-col items-start"
+                    >
+                      <span className="text-lg font-semibold text-white">
+                        Temperatura mínima
+                      </span>
+                      <span className="text-3xl font-bold text-white mt-2">
+                        {apiData?.daily?.temperature_2m_min?.[0] != null
+                          ? `${apiData.daily.temperature_2m_min[0].toFixed(0)}º`
+                          : "—"}
+                      </span>
+                      <span className="text-sm text-white mt-2">
+                        Temperatura mínima prevista para hoje.
+                      </span>
+                    </div>,
+                  ]}
             </div>
           </div>
         </div>
@@ -494,6 +684,43 @@ function App() {
       />
     </>
   );
+}
+
+// Função para traduzir weathercode do Open-Meteo
+function getWeatherDescription(code?: number) {
+  if (code == null) return "—";
+  // Veja todos os códigos em https://open-meteo.com/en/docs#api_form
+  const map: Record<number, string> = {
+    0: "Céu limpo",
+    1: "Principalmente limpo",
+    2: "Parcialmente nublado",
+    3: "Nublado",
+    45: "Névoa",
+    48: "Névoa gelada",
+    51: "Chuvisco leve",
+    53: "Chuvisco moderado",
+    55: "Chuvisco denso",
+    56: "Chuvisco gelado leve",
+    57: "Chuvisco gelado denso",
+    61: "Chuva leve",
+    63: "Chuva moderada",
+    65: "Chuva forte",
+    66: "Chuva gelada leve",
+    67: "Chuva gelada forte",
+    71: "Neve leve",
+    73: "Neve moderada",
+    75: "Neve forte",
+    77: "Cristais de neve",
+    80: "Aguaceiros leves",
+    81: "Aguaceiros moderados",
+    82: "Aguaceiros violentos",
+    85: "Aguaceiros de neve leves",
+    86: "Aguaceiros de neve fortes",
+    95: "Trovoada",
+    96: "Trovoada com granizo leve",
+    99: "Trovoada com granizo forte",
+  };
+  return map[code] ?? "Desconhecido";
 }
 
 export default App;
