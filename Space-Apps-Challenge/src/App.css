@@ -96,8 +96,7 @@ html, body, #root {
 .gap-2 {
   gap: 0.5rem;
 }
-
-.max-h-[calc(100vh)] {
+.max-h-\[calc\(100vh\)\] {
   max-height: calc(100vh);
 }
 
