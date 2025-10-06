@@ -58,7 +58,7 @@ export const useApp = () => {
         !!data.features[0].properties.county_code
       ) {
         setLocationLabel(
-          `${data.features[0].properties.city}, ${data.features[0].properties.county_code}`
+          `${data.features[0].properties.city ?? data.features[0].properties.country}, ${data.features[0].properties.county_code}`
         );
       }
     } finally {
@@ -242,21 +242,6 @@ useEffect(() => {
     }
   }, [viewState?.latitude, viewState?.longitude, userLocation, viewState]);
 
-  async function translateToEnglish(text: string): Promise<string> {
-    const res = await fetch("https://libretranslate.de/translate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        q: text,
-        source: "pt",
-        target: "en",
-        format: "text"
-      }),
-    });
-    const data = await res.json();
-    return data.translatedText;
-  }
-
   return {
     clickedItem,
     bgUrl,
@@ -277,7 +262,6 @@ useEffect(() => {
     loading,
     hasLeftUserLoc,
     showTutorial,
-    translateToEnglish,
     setUnderstood,
     handleRecenter,
     setClickedItem,
