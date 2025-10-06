@@ -73,15 +73,19 @@ export const useApp = () => {
   async function fetchPrediction(lat: number, long: number, dateISO?: string) {
     setIsFetching(true);
 
-    // Monte a query string
-    const params = new URLSearchParams({
-      lat: lat.toString(),
-      long: long.toString(),
+    const payload = {
+      lat,
+      long,
+      lon: long,
       date: dateISO ?? new Date().toISOString(),
-    });
+    };
 
     try {
-      const res = await fetch(`${API_URL}?${params.toString()}`); // método GET, sem headers customizados
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -102,7 +106,7 @@ export const useApp = () => {
           "Connection error: Unable to fetch forecast. Please check your internet connection."
         );
         setConnectionError(true);
-        setTimeout(() => setConnectionError(false), 4000);
+        setTimeout(() => setConnectionError(false), 4000); // Fica true por 4 segundos
       } else {
         setSummary("Unable to get the forecast at the moment.");
       }
