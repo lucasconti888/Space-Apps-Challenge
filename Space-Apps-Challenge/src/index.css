@@ -210,9 +210,9 @@ html, body, #root {
   backdrop-filter: blur(2px);
 }
 
-/* Exemplo para seu arquivo de estilos global ou componente CSS */
+
 .data-\[vaul-drawer-direction\=bottom\]\:mt-24 {
   &[data-vaul-drawer-direction="bottom"] {
-    margin-top: 50vh; /* ou 50vh, 60vh, etc. */
+    margin-top: 40vh; /* ou 50vh, 60vh, etc. */
   }
 }

@@ -70,14 +70,15 @@ export default function Sidebar({
     setTimeout(() => setLoading(false), 500); // ou use um callback/promise se setValues for assíncrono
   }
 
-  function handleLimpar() {
-    setDate(undefined);
-    // Chame aqui sua função de limpar filtros
-  }
-
   return (
     <Drawer open={open} onClose={() => setOpen(false)}>
-      <DrawerContent className="!bg-gradient-to-br from-white z-30 via-blue-50 to-blue-100 max-w-md w-full mx-auto rounded-t-2xl shadow-2xl max-h-[50vh] border border-blue-200">
+      <DrawerContent
+        className="!bg-gradient-to-br from-white z-30 via-blue-50 to-blue-100 max-w-md w-full mx-auto rounded-t-2xl shadow-2xl border border-blue-200"
+        style={{
+          maxHeight: "calc(100vh - 64px)", // 64px de espaço para barra superior, ajuste se necessário
+          overflowY: "auto",
+        }}
+      >
         <List>
           <ListItem>
             <Typography variant="h6" sx={{ width: "100%" }}>
@@ -161,16 +162,6 @@ export default function Sidebar({
               }}
             >
               Ver dados atuais do local
-            </Button>
-          </ListItem>
-          <ListItem>
-            <Button
-              variant="ghost"
-              className="w-full"
-              onClick={handleLimpar}
-              disabled={loading}
-            >
-              Limpar filtros
             </Button>
           </ListItem>
         </List>

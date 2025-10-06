@@ -51,7 +51,6 @@ function App() {
   const { bigCards, cardsRow, sensacao, tempMax, tempMin, temperatura } =
     extractWeatherData(apiData);
 
-  // Estado local para transição suave do background
   const [currentBg, setCurrentBg] = useState(bgUrl);
   const [fade, setFade] = useState(false);
   const timeoutRef = useRef<any>(null);
@@ -59,11 +58,10 @@ function App() {
   useEffect(() => {
     if (bgUrl !== currentBg) {
       setFade(true);
-      // Aguarda a transição e troca o bg
       timeoutRef.current = setTimeout(() => {
         setCurrentBg(bgUrl);
         setFade(false);
-      }, 500); // 500ms = duração da transição
+      }, 500); 
     }
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -485,7 +483,7 @@ function App() {
       <div
         className={`fixed inset-0 transition-colors duration-500`}
         style={{
-          zIndex: 0, // <-- ajuste aqui
+          zIndex: 0, 
           backgroundImage: `url('${currentBg}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
