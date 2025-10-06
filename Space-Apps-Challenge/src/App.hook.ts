@@ -106,6 +106,7 @@ export const useApp = () => {
           "Connection error: Unable to fetch forecast. Please check your internet connection."
         );
         setConnectionError(true);
+        setTimeout(() => setConnectionError(false), 4000); // Fica true por 4 segundos
       } else {
         setSummary("Unable to get the forecast at the moment.");
       }

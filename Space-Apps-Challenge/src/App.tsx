@@ -503,11 +503,11 @@ function App() {
 
       {connectionError && (
         <div
-          className="fixed top-4 left-1/2 z-50"
+          className="fixed top-4 z-50"
           style={{
-            transform: "translateX(-50%)",
             minWidth: 320,
             maxWidth: 400,
+            zIndex: 1000,
           }}
         >
           <Alert
