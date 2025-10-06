@@ -1,5 +1,5 @@
 import type { MapLayerMouseEvent } from "maplibre-gl";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ApiResponse } from "./App.types";
 import { API_URL, BG_IMAGES, getBgFromApi } from "./App.utils";
 
@@ -40,6 +40,7 @@ export const useApp = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [hasLeftUserLoc, setHasLeftUserLoc] = useState(false);
   const [understood, setUnderstood] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
 
   // Ref para controlar se já inicializou a busca inicial
   const hasFetchedInitial = useRef(false);
@@ -58,7 +59,10 @@ export const useApp = () => {
         !!data.features[0].properties.county_code
       ) {
         setLocationLabel(
-          `${data.features[0].properties.city ?? data.features[0].properties.country}, ${data.features[0].properties.county_code}`
+          `${
+            data.features[0].properties.city ??
+            data.features[0].properties.country
+          }, ${data.features[0].properties.county_code}`
         );
       }
     } finally {
@@ -95,64 +99,69 @@ export const useApp = () => {
           ? new Date(data.local.data_referencia).toLocaleString()
           : new Date().toLocaleString()
       );
+      setConnectionError(false);
     } catch (err: any) {
-      setSummary("Não foi possível obter a previsão no momento.");
+      if (err instanceof TypeError && err.message.includes("Failed to fetch")) {
+        setSummary(
+          "Connection error: Unable to fetch forecast. Please check your internet connection."
+        );
+        setConnectionError(true);
+      } else {
+        setSummary("Unable to get the forecast at the moment.");
+      }
     } finally {
       setIsFetching(false);
     }
   }
 
-  // Ref para controlar se já inicializou a busca inicial
+  // Ao montar, pega a localização do usuário e inicializa tudo
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setUserLocation({ lat: latitude, lng: longitude });
+          setViewState((vs) => ({
+            ...vs,
+            latitude,
+            longitude,
+            zoom: 12,
+          }));
+          setViewToPredict({
+            latitude,
+            longitude,
+          });
+        },
+        () => {
+          setUserLocation(null);
+          // Mantém o valor default
+        }
+      );
+    }
+  }, []);
 
+  // Só busca o nome do local e previsão quando viewToPredict mudar
+  useEffect(() => {
+    // Só executa a busca inicial UMA vez, quando a localização do usuário for definida
+    if (
+      !hasFetchedInitial.current &&
+      userLocation &&
+      viewToPredict.latitude === userLocation.lat &&
+      viewToPredict.longitude === userLocation.lng
+    ) {
+      hasFetchedInitial.current = true;
+      fetchLocationName(viewToPredict.latitude, viewToPredict.longitude);
+      fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
+      return;
+    }
 
-// Ao montar, pega a localização do usuário e inicializa tudo
-useEffect(() => {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setUserLocation({ lat: latitude, lng: longitude });
-        setViewState((vs) => ({
-          ...vs,
-          latitude,
-          longitude,
-          zoom: 12,
-        }));
-        setViewToPredict({
-          latitude,
-          longitude,
-        });
-      },
-      () => {
-        setUserLocation(null);
-        // Mantém o valor default
-      }
-    );
-  }
-}, []);
-
-// Só busca o nome do local e previsão quando viewToPredict mudar
-useEffect(() => {
-  // Só executa a busca inicial UMA vez, quando a localização do usuário for definida
-  if (
-    !hasFetchedInitial.current &&
-    userLocation &&
-    viewToPredict.latitude === userLocation.lat &&
-    viewToPredict.longitude === userLocation.lng
-  ) {
-    hasFetchedInitial.current = true;
-    fetchLocationName(viewToPredict.latitude, viewToPredict.longitude);
-    fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
-    return;
-  }
-
-  // Para as demais mudanças de viewToPredict (após inicialização)
-  if (hasFetchedInitial.current) {
-    fetchLocationName(viewToPredict.latitude, viewToPredict.longitude);
-    fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [viewToPredict.latitude, viewToPredict.longitude, userLocation]);
+    // Para as demais mudanças de viewToPredict (após inicialização)
+    if (hasFetchedInitial.current) {
+      fetchLocationName(viewToPredict.latitude, viewToPredict.longitude);
+      fetchPrediction(viewToPredict.latitude, viewToPredict.longitude);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewToPredict.latitude, viewToPredict.longitude, userLocation]);
 
   useEffect(() => {
     setBgUrl(getBgFromApi(apiData));
@@ -232,8 +241,9 @@ useEffect(() => {
 
   useEffect(() => {
     if (
-      userLocation && viewState &&
-      (Math.abs((viewState?.latitude) - userLocation.lat) > 0.0005 ||
+      userLocation &&
+      viewState &&
+      (Math.abs(viewState?.latitude - userLocation.lat) > 0.0005 ||
         Math.abs(viewState?.longitude - userLocation.lng) > 0.0005)
     ) {
       setHasLeftUserLoc(true);
@@ -280,5 +290,6 @@ useEffect(() => {
     handleMapClick,
     handleGoToUserLocation,
     handleInputChange,
+    connectionError,
   };
 };

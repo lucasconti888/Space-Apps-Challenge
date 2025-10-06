@@ -10,6 +10,8 @@ import { extractWeatherData } from "./App.utils";
 import Sidebar from "./components/drawer";
 import { Input } from "./components/ui/input";
 import { Skeleton } from "./components/ui/skeleton";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import { Alert } from "@mui/material";
 
 function App() {
   const {
@@ -46,6 +48,7 @@ function App() {
     summary,
     apiData,
     bgUrl,
+    connectionError,
   } = useApp();
 
   const { bigCards, cardsRow, sensacao, tempMax, tempMin, temperatura } =
@@ -317,31 +320,35 @@ function App() {
                 : cardsRow.map((card, i) => (
                     <div
                       key={i}
-                      className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start"
+                      className="flex-1 bg-black/20 rounded-2xl shadow p-4 flex flex-col items-start justify-between h-32"
+                      style={{ minHeight: 110, display: "flex" }}
                     >
-                      <span className="text-sm text-white">{card.label}</span>
-                      <span className="text-xl font-bold text-white">
-                        {card.value}
-                      </span>
-                      <LinearProgress
-                        variant="determinate"
-                        value={card.progress}
-                        sx={{
-                          width: "100%",
-                          height: 8,
-                          borderRadius: 8,
-                          backgroundColor: "#e5e7eb",
-                          "& .MuiLinearProgress-bar": {
-                            backgroundColor: "#38bdf8",
-                          },
-                          marginTop: "0.5rem",
-                        }}
-                      />
-                      {card.extra && (
-                        <span className="text-xs text-white mt-1">
-                          {card.extra}
+                      <div>
+                        <span className="text-sm text-white">{card.label}</span>
+                        <span className="text-xl font-bold text-white block mt-1">
+                          {card.value}
                         </span>
-                      )}
+                        {card.extra && (
+                          <span className="text-xs text-white mt-1 block">
+                            {card.extra}
+                          </span>
+                        )}
+                      </div>
+                      <div className="w-full mt-auto">
+                        <LinearProgress
+                          variant="determinate"
+                          value={card.progress}
+                          sx={{
+                            width: "100%",
+                            height: 8,
+                            borderRadius: 8,
+                            backgroundColor: "#e5e7eb",
+                            "& .MuiLinearProgress-bar": {
+                              backgroundColor: "#38bdf8",
+                            },
+                          }}
+                        />
+                      </div>
                     </div>
                   ))}
             </div>
@@ -493,6 +500,26 @@ function App() {
           transition: "opacity 0.5s, background-image 0.5s",
         }}
       />
+
+      {connectionError && (
+        <div
+          className="fixed top-4 left-1/2 z-50"
+          style={{
+            transform: "translateX(-50%)",
+            minWidth: 320,
+            maxWidth: 400,
+          }}
+        >
+          <Alert
+            icon={<ErrorOutlineIcon fontSize="inherit" />}
+            severity="error"
+            variant="filled"
+            sx={{ fontWeight: 500 }}
+          >
+            Connection lost: Unable to fetch forecast. Please, try again later.
+          </Alert>
+        </div>
+      )}
     </>
   );
 }
