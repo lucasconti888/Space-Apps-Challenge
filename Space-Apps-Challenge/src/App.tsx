@@ -249,7 +249,7 @@ function App() {
                   {isFetching ? (
                     <Skeleton className="w-full h-6 bg-white/20" />
                   ) : (
-                    translateToEnglish(summary ?? "")
+                   summary
                   )}
                 </span>
               </div>
