@@ -1,18 +1,24 @@
-FROM node:20 AS builder
+# ======================
+# Etapa base
+# ======================
+FROM python:3.11-slim
+
+# Define diretório de trabalho
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
+
+# Copia arquivos necessários
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copia o restante do projeto
 COPY . .
-RUN npm run build
 
-FROM node:20-alpine
-WORKDIR /app
+# Expõe a porta usada pelo Uvicorn
+EXPOSE 8080
 
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/dist ./dist
-RUN npm ci --omit=dev
+# Variáveis de ambiente (ajuste conforme seu caso)
+ENV PORT=8080
+ENV PYTHONUNBUFFERED=1
 
-ENV NODE_ENV=production
-EXPOSE 3000
-
-CMD ["node", "dist/infrastructure/server.js"]
+# Comando para iniciar o servidor FastAPI
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

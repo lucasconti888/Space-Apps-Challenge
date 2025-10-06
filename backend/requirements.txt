@@ -1,0 +1,21 @@
+# --- Base Inicial ---
+earthaccess
+xarray
+h5netcdf
+google-generativeai
+python-dotenv
+
+# --- Dependências para análise e manipulação de dados ---
+pandas
+numpy
+
+# --- API e servidor ---
+fastapi
+uvicorn
+
+# --- Autenticação e rede (suporte ao earthaccess/xarray/netCDF) ---
+requests
+netCDF4
+
+# --- Extra (opcional, mas útil para logs e desempenho) ---
+aiohttp
