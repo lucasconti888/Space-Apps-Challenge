@@ -9,6 +9,7 @@ import { extractWeatherData } from "./App.utils";
 import Sidebar from "./components/drawer";
 import { Input } from "./components/ui/input";
 import { Skeleton } from "./components/ui/skeleton";
+import { useEffect, useRef, useState } from "react";
 
 function App() {
   const {
@@ -24,7 +25,8 @@ function App() {
     setClickedItem,
     setOpen,
     setShowDropdown,
-    handleSelect,fetchLocationName,
+    handleSelect,
+    fetchLocationName,
     setViewState,
     setExpanded,
     setClickedMarkers,
@@ -43,10 +45,30 @@ function App() {
     showDropdown,
     summary,
     apiData,
+    bgUrl,
   } = useApp();
 
   const { bigCards, cardsRow, sensacao, tempMax, tempMin, temperatura } =
     extractWeatherData(apiData);
+
+  // Estado local para transição suave do background
+  const [currentBg, setCurrentBg] = useState(bgUrl);
+  const [fade, setFade] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (bgUrl !== currentBg) {
+      setFade(true);
+      // Aguarda a transição e troca o bg
+      timeoutRef.current = setTimeout(() => {
+        setCurrentBg(bgUrl);
+        setFade(false);
+      }, 500); // 500ms = duração da transição
+    }
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [bgUrl, currentBg]);
 
   return (
     <>
@@ -222,13 +244,15 @@ function App() {
             </div>
 
             <div className="max-w-md mx-auto mt-4 px-4 text-left">
-              <span className="block text-white text-lg font-normal leading-relaxed">
-                {isFetching ? (
-                  <Skeleton className="w-full h-6 bg-white/20" />
-                ) : (
-                  summary
-                )}
-              </span>
+              <div className="bg-black/30 rounded-xl p-4 shadow-lg">
+                <span className="block text-white text-lg font-normal leading-relaxed">
+                  {isFetching ? (
+                    <Skeleton className="w-full h-6 bg-white/20" />
+                  ) : (
+                    summary
+                  )}
+                </span>
+              </div>
             </div>
 
             <div className="text-sm text-white/80 mt-4 ml-8">
@@ -252,28 +276,27 @@ function App() {
                     style={{ border: "2px solid #e5e7eb" }}
                     onClick={() => setExpanded(true)}
                   >
-                    
-                      <Map
-                        initialViewState={{
-                          longitude: userLocation?.lng,
-                          latitude: userLocation?.lat,
-                          zoom: 7,
-                        }}
-                        {...viewState}
-                        style={{ width: "100%", height: "100%" }}
-                        mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
-                        dragPan={false}
-                        dragRotate={false}
-                        scrollZoom={false}
-                        doubleClickZoom={false}
-                        touchZoomRotate={false}
-                      >
-                        <Marker
-                          longitude={userLocation?.lng ?? 0}
-                          latitude={userLocation?.lat ?? 0}
-                          color="#61dbfb"
-                        />
-                      </Map>
+                    <Map
+                      initialViewState={{
+                        longitude: userLocation?.lng,
+                        latitude: userLocation?.lat,
+                        zoom: 7,
+                      }}
+                      {...viewState}
+                      style={{ width: "100%", height: "100%" }}
+                      mapStyle="https://api.maptiler.com/maps/streets/style.json?key=nNpWDVPlrqIFXJhqS2Kw"
+                      dragPan={false}
+                      dragRotate={false}
+                      scrollZoom={false}
+                      doubleClickZoom={false}
+                      touchZoomRotate={false}
+                    >
+                      <Marker
+                        longitude={userLocation?.lng ?? 0}
+                        latitude={userLocation?.lat ?? 0}
+                        color="#61dbfb"
+                      />
+                    </Map>
                     <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                       <span className="text-white font-semibold text-sm">
                         Clique para expandir
@@ -458,6 +481,19 @@ function App() {
           ))}
         </Map>
       </div>
+
+      <div
+        className={`fixed inset-0 transition-colors duration-500`}
+        style={{
+          zIndex: 0, // <-- ajuste aqui
+          backgroundImage: `url('${currentBg}')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          opacity: fade ? 0.3 : 1,
+          transition: "opacity 0.5s, background-image 0.5s",
+        }}
+      />
     </>
   );
 }
