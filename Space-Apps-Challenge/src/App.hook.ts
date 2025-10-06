@@ -73,6 +73,9 @@ export const useApp = () => {
       const data = await fetchOpenMeteo(lat, long); // usa util Open-Meteo
       setApiData(data);
 
+      // Atualiza o background imediatamente ao receber novos dados
+      setBgUrl(getBgFromApi(data));
+
       // Resumo simples do Open-Meteo
       setSummary(
         data?.current

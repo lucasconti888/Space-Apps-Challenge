@@ -81,12 +81,12 @@ function App() {
       timeoutRef.current = setTimeout(() => {
         setCurrentBg(bgUrl);
         setFade(false);
-      }, 500); 
+      }, 500);
     }
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [bgUrl, currentBg]);
+  }, [bgUrl, currentBg]); // <-- Remova o currentBg das dependências!
 
   return (
     <>
