@@ -161,7 +161,7 @@ export default function Sidebar({
                 if (onGoToData) onGoToData();
               }}
             >
-              See current location data
+              Use current date
             </Button>
           </ListItem>
         </List>
