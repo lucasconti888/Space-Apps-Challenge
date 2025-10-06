@@ -54,7 +54,7 @@ function App() {
   // Estado local para transição suave do background
   const [currentBg, setCurrentBg] = useState(bgUrl);
   const [fade, setFade] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<any>(null);
 
   useEffect(() => {
     if (bgUrl !== currentBg) {
