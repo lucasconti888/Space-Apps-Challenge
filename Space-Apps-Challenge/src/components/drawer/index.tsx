@@ -67,6 +67,7 @@ export default function Sidebar({
     setLoading(true);
     setValues(date ? date.toISOString() : new Date().toISOString());
     setDate(undefined);
+    setTimeout(() => setLoading(false), 500); // ou use um callback/promise se setValues for assíncrono
   }
 
   function handleLimpar() {
