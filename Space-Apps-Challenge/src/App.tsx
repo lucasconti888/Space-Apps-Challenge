@@ -35,7 +35,6 @@ function App() {
     setUnderstood,
     fetchPrediction,
     handleRecenter,
-    translateToEnglish,
     setShowTutorial,
     showTutorial,
     hasLeftUserLoc,
