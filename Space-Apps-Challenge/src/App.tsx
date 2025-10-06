@@ -2,6 +2,7 @@ import RoomIcon from "@mui/icons-material/Room";
 import LinearProgress from "@mui/material/LinearProgress";
 import { ChevronLeftIcon, Search as SearchIcon } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { useEffect, useRef, useState } from "react";
 import Map, { Marker } from "react-map-gl/maplibre";
 import "./App.css";
 import { useApp } from "./App.hook";
@@ -9,7 +10,6 @@ import { extractWeatherData } from "./App.utils";
 import Sidebar from "./components/drawer";
 import { Input } from "./components/ui/input";
 import { Skeleton } from "./components/ui/skeleton";
-import { useEffect, useRef, useState } from "react";
 
 function App() {
   const {
@@ -35,6 +35,7 @@ function App() {
     setUnderstood,
     fetchPrediction,
     handleRecenter,
+    translateToEnglish,
     setShowTutorial,
     showTutorial,
     hasLeftUserLoc,
@@ -61,7 +62,7 @@ function App() {
       timeoutRef.current = setTimeout(() => {
         setCurrentBg(bgUrl);
         setFade(false);
-      }, 500); 
+      }, 500);
     }
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -102,11 +103,12 @@ function App() {
         <div className="absolute top-6 left-0 flex flex-row items-center gap-3 z-30 w-full px-4">
           <div className="flex" style={{ width: "15%" }}>
             <button
-              className="bg-[#f3f4f6] hover:bg-white rounded-full p-2 shadow-lg border border-gray-200 transition w-10 flex items-center justify-center"
+              className="bg-[#f3f4f6] hover:bg-white rounded-full shadow-lg border border-gray-200 transition  flex items-center justify-center"
               onClick={() => setExpanded(false)}
               aria-label="Back to menu"
+              style={{ padding: "6px" }}
             >
-              <ChevronLeftIcon className="w-5 h-5 text-gray-700" />
+              <ChevronLeftIcon className="w-10 h-10 text-gray-700" />
             </button>
           </div>
           <div
@@ -165,7 +167,8 @@ function App() {
               Click on the desired location
             </h2>
             <p className="text-gray-700 mb-4">
-              Click on the map to get the weather information for the selected location.
+              Click on the map to get the weather information for the selected
+              location.
             </p>
             <button
               className="bg-blue-600 text-white px-6 py-2 rounded-full font-semibold shadow hover:bg-blue-700 transition"
@@ -246,7 +249,7 @@ function App() {
                   {isFetching ? (
                     <Skeleton className="w-full h-6 bg-white/20" />
                   ) : (
-                    summary
+                    translateToEnglish(summary ?? "")
                   )}
                 </span>
               </div>
